@@ -9,8 +9,9 @@ compatibility_date = "2026-11-01"
 # endereços que podem usar o assistente (separados por vírgula)
 ORIGENS = "https://filipejefte.github.io,http://localhost:8000,http://127.0.0.1:8000"
 # modelos do Gemini, na ordem: se um estiver sobrecarregado ou sem cota no dia, usa o próximo.
-# O Flash-Lite vem primeiro: responde rápido e tem a maior cota gratuita por dia.
-MODELOS = "gemini-flash-lite-latest,gemini-flash-latest,gemini-3.5-flash-lite"
+# Os Flash-Lite vêm primeiro: respondem rápido e têm a maior cota gratuita por dia. O Flash (que pensa
+# antes de responder) fica por último: nos testes ele passava dos 12 s de prazo dos primeiros da lista.
+MODELOS = "gemini-flash-lite-latest,gemini-3.5-flash-lite,gemini-flash-latest"
 
 # limite por pessoa (por IP): 6 perguntas por minuto.
 # Se o deploy recusar este bloco no seu plano, apague-o: o Worker funciona sem ele.
