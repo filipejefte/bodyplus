@@ -1,6 +1,6 @@
 // Conferência do Worker do assistente, com um Gemini de mentira: node worker/teste.mjs (sem saída = tudo certo)
 import assert from 'node:assert';
-import worker, { paraGemini } from './index.js';
+import worker, { paraGemini, REGRA_FIXA } from './index.js';
 
 const ENV = { ORIGENS: 'https://filipejefte.github.io,http://localhost:8000', GEMINI_API_KEY: 'chave-teste', MODELOS: 'modelo-a,modelo-b' };
 const pedido = (corpo, origem = 'http://localhost:8000', metodo = 'POST') =>
@@ -19,9 +19,10 @@ globalThis.fetch = async (url, init) => {
 const ok = (texto) => [200, { candidates: [{ content: { parts: [{ text: texto }] } }] }];
 const rodar = async (req, env = ENV) => { const r = await worker.fetch(req, env); return { status: r.status, h: r.headers, j: r.status === 204 ? null : await r.json() }; };
 
-// formato do Gemini: system → systemInstruction, assistant → model, seguidas do mesmo lado juntas
+// formato do Gemini: regra de assunto fixa + system → systemInstruction, assistant → model, seguidas do mesmo lado juntas
 const g = paraGemini(MSGS, { type: 'object' });
-assert.strictEqual(g.systemInstruction.parts[0].text, 'regras');
+assert.strictEqual(g.systemInstruction.parts[0].text, REGRA_FIXA + '\n\nregras');
+assert.ok(paraGemini([{ role: 'user', content: 'oi' }]).systemInstruction.parts[0].text.startsWith('Assunto: você só ajuda com treinos'), 'a regra vale mesmo sem instrução da página');
 assert.deepStrictEqual(g.contents.map((c) => c.role), ['user', 'model', 'user']);
 assert.strictEqual(g.contents[2].parts[0].text, 'nota\n\npergunta');
 assert.deepStrictEqual(g.generationConfig.responseJsonSchema, { type: 'object' });
