@@ -1,0 +1,23 @@
+# Body+ · assistente: Cloudflare Worker que guarda a chave do Gemini.
+# Publicar: veja "Assistente" no README. A chave NÃO fica aqui:
+#   npx wrangler secret put GEMINI_API_KEY
+name = "bodyplus-ia"
+main = "index.js"
+compatibility_date = "2026-11-01"
+
+[vars]
+# endereços que podem usar o assistente (separados por vírgula)
+ORIGENS = "https://filipejefte.github.io,http://localhost:8000,http://127.0.0.1:8000"
+# modelos do Gemini, na ordem: se um estiver sobrecarregado ou sem cota no dia, usa o próximo.
+# O Flash-Lite vem primeiro: responde rápido e tem a maior cota gratuita por dia.
+MODELOS = "gemini-flash-lite-latest,gemini-flash-latest,gemini-3.5-flash-lite"
+
+# limite por pessoa (por IP): 6 perguntas por minuto.
+# Se o deploy recusar este bloco no seu plano, apague-o: o Worker funciona sem ele.
+[[ratelimits]]
+name = "LIMITE"
+namespace_id = "1001"
+
+  [ratelimits.simple]
+  limit = 6
+  period = 60

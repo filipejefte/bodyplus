@@ -52,24 +52,51 @@ planilha** num e **Importar → Substituir tudo** no outro.
 - Menu **⋯**: recarregar `data/treinos.xlsx`, descartar edições, começar do zero
   e o Pix de apoio.
 
-### Assistente (IA no seu computador)
+### Assistente (IA)
 
 **Assistente**, no topo, abre um chat: escreva o que quer ("monte 4 semanas de
 corrida para 5 km", "passa o treino de pernas para segunda que vem", "troca o
 supino por flexão") e ele propõe as mudanças. Nada muda até você clicar em
 **Aplicar**, e dá para **Desfazer** em seguida.
 
-- Usa o [Ollama](https://ollama.com), gratuito e no seu computador: os treinos
-  não saem da sua máquina. Instale e baixe um modelo: `ollama pull qwen3:8b`.
-- Pelo `localhost` funciona direto. Pelo GitHub Pages, libere o endereço no
-  Ollama: variável de ambiente `OLLAMA_ORIGINS=https://filipejefte.github.io`
-  e reinicie o Ollama (o navegador pode pedir para o site acessar o seu
-  computador: permita).
-- Numa RTX 4050 de notebook, o `qwen3:8b` responde em 20 s a 1 min. Modelos
-  pequenos erram às vezes: confira a lista de mudanças antes de aplicar.
-- As datas: o modelo diz "semana que vem, segunda" e o Body+ faz a conta (ele
-  erra quando tenta calcular a data sozinho).
-- Endereço e modelo ficam em *configurar*, no rodapé do painel.
+- Usa o Gemini, do Google, com uma chave só para todo mundo: ninguém precisa
+  configurar nada. Para responder, os treinos desta semana em diante vão para o
+  Gemini.
+- A chave fica num Cloudflare Worker do projeto (pasta `worker/`), nunca na
+  página. O Worker só atende o GitHub Pages e o `localhost:8000`, limita 6
+  perguntas por minuto por pessoa e não guarda nada.
+- A cota gratuita do Gemini é dividida entre todos. Quando a do dia acaba, o
+  Worker passa para o próximo modelo da lista (`MODELOS` no
+  `worker/wrangler.toml`); quando todos acabam, o painel avisa e volta no dia
+  seguinte. Use uma chave de projeto **sem cobrança ligada**: no pior caso a
+  cota acaba, mas nunca há conta para pagar.
+- As datas: o modelo diz "semana que vem, segunda" e o Body+ faz a conta.
+  Confira a lista de mudanças antes de aplicar.
+
+**Publicar o Worker** (uma vez):
+
+1. Crie a chave em https://aistudio.google.com/apikey, num projeto sem
+   cobrança.
+2. Crie uma conta gratuita em https://dash.cloudflare.com/sign-up.
+3. No terminal, na pasta do projeto:
+
+   ```powershell
+   cd worker
+   npx wrangler login
+   npx wrangler deploy
+   npx wrangler secret put GEMINI_API_KEY
+   ```
+
+   O `login` abre o navegador para autorizar. No primeiro `deploy`, ele pede
+   um nome para o seu subdomínio `workers.dev` e mostra o endereço do Worker
+   (`https://bodyplus-ia.<subdomínio>.workers.dev`). O `secret put` pede a
+   chave: cole e aperte Enter (ela fica só no Cloudflare).
+4. Coloque esse endereço em `CONF.url`, no começo de `web/assistente.js`, e
+   envie ao GitHub.
+
+Se o `deploy` recusar o bloco `[[ratelimits]]` do `wrangler.toml`, apague esse
+bloco e rode de novo: o Worker funciona sem ele (só sem o limite por pessoa).
+Conferência do Worker: `node worker/teste.mjs`.
 
 O traço embaixo de cada cartão é o **perfil do treino**: largura = tempo,
 altura e cor = zona de FC (cinza sem alvo, azul Z2, verde Z3, laranja Z4,
@@ -182,7 +209,8 @@ Z1 50–59% · Z2 60–69% · Z3 70–79% · Z4 80–89% · Z5 90–95%.
 ```
 index.html            página
 web/app.js            interface: semanas, editor, novo treino, importar, envio, Pix
-web/assistente.js     chat com o Ollama: propõe mudanças, você aplica ou desfaz
+web/assistente.js     chat do assistente: propõe mudanças, você aplica ou desfaz
+worker/               Cloudflare Worker que guarda a chave do Gemini (node worker/teste.mjs)
 web/builder.js        linhas da planilha → JSON do Garmin (nomes, passos, datas do plano)
 web/pdf-plano.js      leitura do PDF do Time Híbrido (pdf.js, no navegador)
 web/depara.js         De-para padrão exercício → catálogo do Garmin

@@ -17,6 +17,11 @@ bodyplus_envio_*.js
 # Cópia de "Meus treinos" baixada antes de limpar
 garmin-meus-treinos-*.json
 
+# Worker do assistente: arquivos locais do Wrangler (o .dev.vars guarda segredos)
+worker/.wrangler/
+.dev.vars
+node_modules/
+
 # Editor / SO
 .vscode/
 .idea/

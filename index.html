@@ -18,7 +18,7 @@
     <p class="fonte" id="fonte" aria-live="polite"></p>
     <div class="acoes-topo">
       <button class="btn btn-primario" data-novo-em="">+ Novo treino</button>
-      <button class="btn btn-claro" id="btn-ia" aria-haspopup="dialog" title="Peça em texto o que quer mudar nos treinos (IA no seu computador, pelo Ollama)">Assistente</button>
+      <button class="btn btn-claro" id="btn-ia" aria-haspopup="dialog" title="Peça em texto o que quer mudar nos treinos">Assistente</button>
       <button class="btn btn-claro" data-importar title="PDF do Time Híbrido ou planilha .xlsx">Importar</button>
       <input type="file" id="arquivo" accept=".pdf,.xlsx,.xlsm" hidden>
       <button class="btn btn-claro" id="btn-baixar" title="Baixar tudo em .xlsx (para guardar ou editar no Excel)">Baixar planilha</button>
@@ -124,31 +124,22 @@
     <div class="gaveta-painel">
       <header class="gaveta-topo">
         <div>
-          <p class="gaveta-sub">IA no seu computador, pelo Ollama · nada sai daqui</p>
+          <p class="gaveta-sub">IA do Gemini, do Google</p>
           <h2 id="ia-titulo">Assistente</h2>
         </div>
         <button class="btn-x" data-fechar aria-label="Fechar">×</button>
       </header>
       <div class="gaveta-corpo ia-corpo" id="ia-corpo">
-        <p class="dica">Escreva o que quer: criar um plano, mover a semana, trocar exercícios, tirar dúvidas. Ele propõe as mudanças e você aplica (e pode desfazer).</p>
+        <p class="dica">Escreva o que quer: criar um plano, mover a semana, trocar exercícios, tirar dúvidas. Ele propõe as mudanças e você aplica (e pode desfazer). Para responder, os seus treinos desta semana em diante vão para o Gemini.</p>
         <div class="ia-sugestoes" id="ia-sugestoes"></div>
-        <div class="ia-erro-conexao" id="ia-erro-conexao" hidden></div>
         <div class="ia-msgs" id="ia-msgs" aria-live="polite"></div>
-        <p class="ia-status" id="ia-pensando" hidden>Pensando… (num computador sem placa de vídeo pode levar um minuto)</p>
+        <p class="ia-status" id="ia-pensando" hidden>Pensando…</p>
       </div>
       <form class="ia-form" id="ia-form">
         <textarea id="ia-texto" rows="2" placeholder="Ex.: monte 3 corridas por semana até o fim do mês" aria-label="Mensagem para o assistente"></textarea>
         <button class="btn btn-primario" id="ia-enviar">Enviar</button>
         <button class="btn btn-claro" id="ia-parar" type="button" hidden>Parar</button>
       </form>
-      <details class="ia-config">
-        <summary><span id="ia-conexao">Ollama</span> · configurar</summary>
-        <div class="ia-config-campos">
-          <label class="campo"><span>Endereço do Ollama</span><input id="ia-url" autocomplete="off"></label>
-          <label class="campo"><span>Modelo</span><select id="ia-modelo" disabled><option>—</option></select></label>
-          <button class="btn btn-claro" id="ia-reconectar" type="button">Reconectar</button>
-        </div>
-      </details>
     </div>
   </aside>
 

@@ -1,13 +1,13 @@
 /**
- * Body+ · assistente (IA no seu computador, pelo Ollama)
- * ======================================================
+ * Body+ · assistente (IA pelo Gemini, com a chave do projeto)
+ * ===========================================================
  * Você escreve o que quer ("monta 4 semanas de corrida para 5 km"), o modelo
  * responde e propõe mudanças nos treinos. Nada muda até você clicar em
- * Aplicar, e depois dá para desfazer. Os treinos só vão para o Ollama da sua
- * máquina (http://localhost:11434): nada sai do seu computador.
+ * Aplicar, e depois dá para desfazer.
  *
- * O modelo devolve JSON num formato fixo (format = esquema do Ollama):
- *   {resposta, acoes: [{acao: criar|alterar|mover|excluir, id?, data?, ...campos}]}
+ * A página fala com o Worker do projeto (pasta worker/), que guarda a chave do
+ * Gemini: ela nunca chega ao navegador. O modelo devolve JSON num formato fixo:
+ *   {resposta, acoes: [{acao: criar|alterar|mover|excluir, id?, semana?, dia?, ...campos}]}
  */
 (function () {
   'use strict';
@@ -16,8 +16,8 @@
   const $ = (s, r = document) => r.querySelector(s);
   const esc = (v) => String(v === null || v === undefined ? '' : v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-  const CHAVE = 'bodyplus:ia';
-  const cfg = Object.assign({ url: 'http://localhost:11434', modelo: '' }, lerCfg());
+  /** Endereço do Worker (worker/), publicado com `npx wrangler deploy`: veja "Assistente" no README. */
+  const CONF = { url: 'https://bodyplus-ia.bodyplus.workers.dev' };
   const conversa = [];          // [{role: 'user'|'assistant', content}] mandado de volta como histórico
   let pedido = null;            // AbortController do pedido em andamento
   const ESPORTES = Object.keys(B.ESPORTES);
@@ -28,9 +28,6 @@
     'Crie um treino de pernas para sexta, com 5 exercícios',
     'O que eu tenho para esta semana?',
   ];
-
-  function lerCfg() { try { return JSON.parse(localStorage.getItem(CHAVE) || '{}'); } catch (e) { return {}; } }
-  function salvarCfg() { try { localStorage.setItem(CHAVE, JSON.stringify(cfg)); } catch (e) { /* ok */ } }
 
   const num = { type: 'number' }, int = { type: 'integer' }, str = { type: 'string' };
   const ESQUEMA = {
@@ -149,28 +146,24 @@
   }
 
   // ---------------------------------------------------------------------
-  // Ollama
+  // Worker do projeto (worker/): guarda a chave e fala com o Gemini
   // ---------------------------------------------------------------------
-  async function modelos() {
-    const r = await fetch(cfg.url.replace(/\/+$/, '') + '/api/tags');
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    return ((await r.json()).models || []).map((m) => m.name);
-  }
-
   async function perguntar(texto) {
     pedido = new AbortController();
     const messages = [{ role: 'system', content: sistema() }, ...conversa.slice(-8), { role: 'user', content: texto }];
-    // contexto do tamanho do pedido (~3 caracteres por token + folga para a resposta): quanto menor,
-    // mais do modelo cabe na placa de vídeo e mais rápido ele responde
-    const tokens = messages.reduce((s, m) => s + m.content.length, 0) / 3 + 1500;
-    const num_ctx = [4096, 8192, 16384, 32768].find((n) => n >= tokens) || 32768;
-    const corpo = { model: cfg.modelo, messages, stream: false, format: ESQUEMA, think: false, options: { temperature: 0.2, num_ctx } };
-    const r = await fetch(cfg.url.replace(/\/+$/, '') + '/api/chat', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo), signal: pedido.signal,
-    });
-    if (!r.ok) throw new Error('o Ollama respondeu HTTP ' + r.status + ' ' + (await r.text().catch(() => '')).slice(0, 160));
-    const j = await r.json();
-    const saida = JSON.parse((j.message && j.message.content) || '{}');
+    let r;
+    try {
+      r = await fetch(CONF.url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages, schema: ESQUEMA }), signal: pedido.signal });
+    } catch (e) {
+      if (e.name === 'AbortError') throw e;
+      throw new Error('não consegui falar com o assistente (sem internet?)');
+    }
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.erro || 'o assistente respondeu HTTP ' + r.status);
+    let saida;
+    // sem o formato fixo o modelo às vezes embrulha o JSON em ```json … ```
+    try { saida = JSON.parse(String(j.texto || '{}').trim().replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '')); }
+    catch (e) { throw new Error('a resposta veio num formato que não entendi; tente de novo'); }
     return { resposta: String(saida.resposta || ''), acoes: Array.isArray(saida.acoes) ? saida.acoes : [] };
   }
 
@@ -227,7 +220,11 @@
     const alvo = nomeDe(a.id);
     if (!alvo) return { erro: `treino "${a.id}" não existe` };
     if (a.acao === 'excluir') return { texto: `Excluir ${alvo}` };
-    if (a.acao === 'mover') return dataOk(a.data) ? { texto: `Mover ${alvo} para ${A.fmtData(a.data)}` } : { erro: 'mover sem data válida' };
+    if (a.acao === 'mover') {
+      if (!dataOk(a.data)) return { erro: 'mover sem data válida' };
+      if ((A.treinos().find((t) => t.chave === a.id) || {}).data === a.data) return { nada: true };   // já está nessa data
+      return { texto: `Mover ${alvo} para ${A.fmtData(a.data)}` };
+    }
     const campos = Object.keys(semVazios(a)).filter((c) => !['acao', 'id', 'semana', 'dia', 'dia_do_mes', 'mes'].includes(c));
     if (!campos.length) return { erro: `alterar ${alvo} sem nada para mudar` };
     if (a.data && !dataOk(a.data)) return { erro: 'data inválida' };
@@ -299,7 +296,7 @@
   }
 
   function mostrarResposta(saida) {
-    const itens = saida.acoes.map(resolverData).map((a) => ({ a, ...descrever(a) }));
+    const itens = saida.acoes.map(resolverData).map((a) => ({ a, ...descrever(a) })).filter((i) => !i.nada);
     const boas = itens.filter((i) => i.texto);
     const ruins = itens.filter((i) => i.erro);
     const d = adicionar(`<p>${esc(saida.resposta || (boas.length ? 'Proponho:' : 'Não entendi; pode explicar de outro jeito?'))}</p>`, 'ia-ela');
@@ -346,7 +343,7 @@
   async function enviar(texto) {
     texto = texto.trim();
     if (!texto || pedido) return;
-    if (!cfg.modelo) { await conectar(); if (!cfg.modelo) return; }
+    if (!CONF.url) { adicionar('<p>O assistente ainda não está ligado: falta publicar o Worker do projeto (veja "Assistente" no README).</p>', 'ia-ela ia-erro'); return; }
     adicionar(`<p>${esc(texto)}</p>`, 'ia-eu');
     $('#ia-texto').value = '';
     ocupado(true);
@@ -356,7 +353,7 @@
       mostrarResposta(saida);
     } catch (e) {
       if (e.name === 'AbortError') adicionar('<p>Parei.</p>', 'ia-ela');
-      else adicionar(`<p>Não consegui falar com o Ollama: ${esc(e.message)}.</p>${ajuda()}`, 'ia-ela ia-erro');
+      else adicionar(`<p>Não consegui uma resposta: ${esc(e.message)}.</p>`, 'ia-ela ia-erro');
     } finally {
       pedido = null;
       ocupado(false);
@@ -364,41 +361,9 @@
     }
   }
 
-  function ajuda() {
-    const local = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
-    return `<ol class="ia-ajuda">
-      <li>Instale o Ollama (<a href="https://ollama.com/download" target="_blank" rel="noopener">ollama.com</a>) e baixe um modelo: <code>ollama pull qwen3:8b</code>.</li>
-      ${local ? '' : `<li>Libere esta página no Ollama: crie a variável de ambiente <code>OLLAMA_ORIGINS</code> com <code>${esc(location.origin)}</code> e reinicie o Ollama. Se o navegador perguntar se o site pode acessar o seu computador, permita.</li>`}
-      <li>Com o Ollama aberto, clique em <b>Reconectar</b>.</li></ol>`;
-  }
-
-  async function conectar() {
-    const sel = $('#ia-modelo');
-    $('#ia-conexao').textContent = 'Procurando o Ollama…';
-    try {
-      const lista = await modelos();
-      if (!lista.length) throw new Error('nenhum modelo instalado');
-      if (!lista.includes(cfg.modelo)) cfg.modelo = lista.find((m) => /qwen|llama|gemma|mistral/i.test(m)) || lista[0];
-      salvarCfg();
-      sel.innerHTML = lista.map((m) => `<option ${m === cfg.modelo ? 'selected' : ''}>${esc(m)}</option>`).join('');
-      sel.disabled = false;
-      $('#ia-conexao').textContent = 'Conectado ao Ollama';
-      $('#ia-erro-conexao').hidden = true;
-    } catch (e) {
-      cfg.modelo = '';
-      sel.innerHTML = '<option>—</option>';
-      sel.disabled = true;
-      $('#ia-conexao').textContent = 'Ollama não encontrado';
-      $('#ia-erro-conexao').innerHTML = `<p>Não achei o Ollama em <code>${esc(cfg.url)}</code> (${esc(e.message)}).</p>${ajuda()}`;
-      $('#ia-erro-conexao').hidden = false;
-    }
-  }
-
   function abrirPainel() {
     $('#assistente').hidden = false;
     document.body.classList.add('sem-rolagem');
-    $('#ia-url').value = cfg.url;
-    if (!cfg.modelo || $('#ia-modelo').disabled) conectar();
     $('#ia-texto').focus();
   }
   function fecharPainel() {
@@ -414,9 +379,7 @@
   $('#ia-form').addEventListener('submit', (e) => { e.preventDefault(); enviar($('#ia-texto').value); });
   $('#ia-texto').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar($('#ia-texto').value); } });
   $('#ia-parar').addEventListener('click', () => pedido && pedido.abort());
-  $('#ia-modelo').addEventListener('change', (e) => { cfg.modelo = e.target.value; salvarCfg(); });
-  $('#ia-reconectar').addEventListener('click', () => { cfg.url = $('#ia-url').value.trim() || 'http://localhost:11434'; salvarCfg(); conectar(); });
 
-  // para teste: node não tem DOM; as regras ficam acessíveis
-  window.BodyIA = { descrever, executar, resolverData, ESQUEMA, sistema };
+  // para conferir no Console (e testar com um Worker local, trocando CONF.url)
+  window.BodyIA = { descrever, executar, resolverData, ESQUEMA, sistema, CONF };
 })();
