@@ -29,6 +29,10 @@ planilha** num e **Importar → Substituir tudo** no outro.
 
 ## Usar
 
+- **Semanas** ou **Calendário**, no alto: a lista por semana ou o mês
+  inteiro. No calendário cada treino aparece com o perfil dele; clique num dia
+  para ver os cartões dele embaixo (no celular, toque no dia), e no **+** de um
+  dia para criar um treino nele. A escolha fica guardada.
 - **+ Novo treino** (no topo ou o **+ treino** de cada semana): escolha a
   modalidade e a data, e edite na gaveta que abre.
   - **Cardio** (corrida, bike, caminhada, trilha, natação, cardio, HIIT, yoga,
@@ -47,14 +51,18 @@ planilha** num e **Importar → Substituir tudo** no outro.
     **Substituir tudo** troca (é como abrir de volta uma planilha baixada).
   - Prefixo nos nomes (ex.: `3K`) separa dois planos com os mesmos nomes.
   - Outro tipo de PDF ainda não é lido — só o do Time Híbrido.
-- **Baixar planilha** salva tudo em `.xlsx`. Substitua `data/treinos.xlsx` por
-  ela para guardar no projeto (e editar em massa no Excel, se quiser).
-- Menu **⋯**: recarregar `data/treinos.xlsx`, descartar edições, começar do zero
-  e o Pix de apoio.
+- Menu **⋯**: **Baixar planilha** (salva tudo em `.xlsx`; substitua
+  `data/treinos.xlsx` por ela para guardar no projeto e editar em massa no
+  Excel), recarregar `data/treinos.xlsx`, descartar edições e começar do zero.
+- **Apoiar**, no topo e no fim da página: o Pix de apoio, de qualquer valor.
+- **Assistente**: o botão redondo no canto de baixo.
+- No painel de envio, calendário, "se já existe" e "só simular" ficam em
+  **Opções**; limpar o calendário ou "Meus treinos" inteiros fica em **Limpar o
+  Garmin inteiro**.
 
 ### Assistente (IA)
 
-**Assistente**, no topo, abre um chat: escreva o que quer ("monte 4 semanas de
+**Assistente**, o botão no canto de baixo, abre um chat: escreva o que quer ("monte 4 semanas de
 corrida para 5 km", "passa o treino de pernas para segunda que vem", "troca o
 supino por flexão") e ele propõe as mudanças. Nada muda até você clicar em
 **Aplicar**, e dá para **Desfazer** em seguida.

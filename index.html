@@ -13,34 +13,50 @@
   <link rel="stylesheet" href="web/style.css">
 </head>
 <body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-fechar" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="i-mais-opcoes" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></symbol>
+    <symbol id="i-anterior" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+    <symbol id="i-proximo" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+    <symbol id="i-lista" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6h.5M4 12h.5M4 18h.5"/></symbol>
+    <symbol id="i-calendario" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
+    <symbol id="i-coracao" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 7.5 2.8C19.5 15.4 12 20 12 20z"/></symbol>
+    <symbol id="i-conversa" viewBox="0 0 24 24"><path d="M5 5.5h14a1.5 1.5 0 0 1 1.5 1.5v8.5A1.5 1.5 0 0 1 19 17H10l-4.5 3.5V17H5a1.5 1.5 0 0 1-1.5-1.5V7A1.5 1.5 0 0 1 5 5.5z"/><path d="M12 8.5l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z"/></symbol>
+    <symbol id="i-aviso" viewBox="0 0 24 24"><path d="M12 4 2.8 19.5h18.4z"/><path d="M12 10v4.2M12 17h.01"/></symbol>
+    <symbol id="i-seta-baixo" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  </svg>
+
   <header class="topo">
     <h1 class="marca">Body<svg class="mais" viewBox="0 0 40 40" aria-hidden="true"><path d="M14 0h12v14h14v12H26v14H14V26H0V14h14z"/></svg><span class="sr">+</span></h1>
     <p class="fonte" id="fonte" aria-live="polite"></p>
     <div class="acoes-topo">
-      <button class="btn btn-primario" data-novo-em="">+ Novo treino</button>
-      <button class="btn btn-claro" id="btn-ia" aria-haspopup="dialog" title="Peça em texto o que quer mudar nos treinos">Assistente</button>
+      <button class="btn btn-apoio" data-apoiar aria-haspopup="dialog"><svg class="ic ic-cheio" aria-hidden="true"><use href="#i-coracao"/></svg>Apoiar</button>
       <button class="btn btn-claro" data-importar title="PDF do Time Híbrido ou planilha .xlsx">Importar</button>
       <input type="file" id="arquivo" accept=".pdf,.xlsx,.xlsm" hidden>
-      <button class="btn btn-claro" id="btn-baixar" title="Baixar tudo em .xlsx (para guardar ou editar no Excel)">Baixar planilha</button>
       <details class="menu">
-        <summary class="btn btn-claro" aria-label="Mais opções">⋯</summary>
+        <summary class="btn btn-claro btn-icone" aria-label="Mais opções"><svg class="ic ic-cheio" aria-hidden="true"><use href="#i-mais-opcoes"/></svg></summary>
         <div class="menu-itens">
+          <button id="btn-baixar">Baixar planilha (.xlsx)</button>
           <button id="btn-recarregar">Recarregar data/treinos.xlsx</button>
           <button id="btn-descartar">Descartar todas as edições</button>
           <button id="btn-zerar">Começar do zero</button>
-          <button id="btn-apoiar" aria-haspopup="dialog">Apoiar o projeto (Pix)</button>
         </div>
       </details>
+      <button class="btn btn-primario" data-novo-em="">+ Novo treino</button>
     </div>
   </header>
 
-  <section class="filtros" aria-label="Filtros">
-    <div class="segmentado" id="filtro">
+  <section class="filtros" aria-label="Visualização e filtros">
+    <div class="segmentado segmentado-vista" id="vista" role="group" aria-label="Visualização">
+      <button data-v="semanas" class="ativo" aria-pressed="true"><svg class="ic" aria-hidden="true"><use href="#i-lista"/></svg>Semanas</button>
+      <button data-v="calendario" aria-pressed="false"><svg class="ic" aria-hidden="true"><use href="#i-calendario"/></svg>Calendário</button>
+    </div>
+    <div class="segmentado" id="filtro" role="group" aria-label="Modalidade">
       <button data-f="tudo" class="ativo">Tudo</button>
       <button data-f="cardio">Cardio</button>
       <button data-f="musculacao">Musculação</button>
     </div>
-    <label class="campo-check">
+    <label class="campo-check" id="cfg-passadas-box">
       <input type="checkbox" id="cfg-passadas" checked>
       <span>Esconder semanas que já passaram</span>
     </label>
@@ -61,6 +77,8 @@
         <button data-p="nenhum">Nenhum</button>
       </div>
 
+      <details class="envio-opcoes">
+        <summary><span class="envio-opcoes-titulo">Opções</span><span class="envio-opcoes-resumo" id="resumo-opcoes"></span><svg class="ic seta" aria-hidden="true"><use href="#i-seta-baixo"/></svg></summary>
       <fieldset>
         <legend>Calendário</legend>
         <label><input type="radio" name="agendar" value="mover" checked> Colocar na data daqui <small>agenda (ou move) os selecionados para a data mostrada nesta página</small></label>
@@ -74,20 +92,21 @@
         <small class="nota">Treinos novos e editados aqui são substituídos quando estão diferentes no Garmin.</small>
       </fieldset>
       <label class="check-simular"><input type="checkbox" id="simular"> Só simular <small>mostra o que faria, sem gravar nada</small></label>
+      </details>
 
       <button class="btn btn-primario btn-cheio" id="btn-gerar">Gerar script</button>
       <button class="btn btn-claro btn-cheio" id="btn-apagar" title="Tira do Garmin os treinos selecionados (de Meus treinos e do calendário)">Apagar do Garmin</button>
       <p class="nota" id="dica-extensao">Com a extensão do Body+ (pasta <code>extensao/</code> do projeto), o envio vira um clique, sem colar script.</p>
       <p class="avisos-envio" id="avisos-envio"></p>
 
-      <fieldset class="limpar">
-        <legend>Limpar o Garmin inteiro</legend>
-        <small id="limpar-nota">tudo, não só os selecionados · pede confirmação</small>
+      <details class="limpar">
+        <summary><span>Limpar o Garmin inteiro</span><svg class="ic seta" aria-hidden="true"><use href="#i-seta-baixo"/></svg></summary>
+        <small id="limpar-nota">tudo, não só os selecionados; pede confirmação</small>
         <div class="limpar-botoes">
           <button class="btn btn-claro" id="btn-limpar" title="Tira todos os treinos das datas do calendário (do ano passado ao ano que vem). Eles continuam em Meus treinos.">Calendário</button>
           <button class="btn btn-claro" id="btn-limpar-biblioteca" title="Apaga todos os treinos de Meus treinos (e as datas deles), inclusive os que não vieram do Body+. Baixa uma cópia antes.">Meus treinos</button>
         </div>
-      </fieldset>
+      </details>
 
       <div class="script" id="script" hidden>
         <div class="script-acoes">
@@ -105,6 +124,13 @@
     </aside>
   </main>
 
+  <footer class="rodape">
+    <p>O Body+ é gratuito e feito nas horas vagas. Se ele te ajuda a treinar, um Pix de qualquer valor mantém o projeto vivo.</p>
+    <button class="btn btn-apoio" data-apoiar aria-haspopup="dialog"><svg class="ic ic-cheio" aria-hidden="true"><use href="#i-coracao"/></svg>Apoiar com Pix</button>
+  </footer>
+
+  <button class="fab" id="btn-ia" aria-haspopup="dialog" title="Peça em texto o que quer mudar nos treinos"><svg class="ic" aria-hidden="true"><use href="#i-conversa"/></svg><span>Assistente</span></button>
+
   <aside class="gaveta" id="gaveta" hidden aria-modal="true" role="dialog" aria-labelledby="gaveta-titulo">
     <div class="gaveta-fundo" data-fechar></div>
     <div class="gaveta-painel">
@@ -113,7 +139,7 @@
           <p class="gaveta-sub" id="gaveta-sub"></p>
           <h2 id="gaveta-titulo"></h2>
         </div>
-        <button class="btn-x" data-fechar aria-label="Fechar">×</button>
+        <button class="btn-x" data-fechar aria-label="Fechar"><svg class="ic" aria-hidden="true"><use href="#i-fechar"/></svg></button>
       </header>
       <div class="gaveta-corpo" id="gaveta-corpo"></div>
     </div>
@@ -127,7 +153,7 @@
           <p class="gaveta-sub">IA do Gemini, do Google</p>
           <h2 id="ia-titulo">Assistente</h2>
         </div>
-        <button class="btn-x" data-fechar aria-label="Fechar">×</button>
+        <button class="btn-x" data-fechar aria-label="Fechar"><svg class="ic" aria-hidden="true"><use href="#i-fechar"/></svg></button>
       </header>
       <div class="gaveta-corpo ia-corpo" id="ia-corpo">
         <p class="dica">Escreva o que quer: criar um plano, mover a semana, trocar exercícios, tirar dúvidas. Ele propõe as mudanças e você aplica (e pode desfazer). Para responder, os seus treinos desta semana em diante vão para o Gemini.</p>
@@ -179,7 +205,7 @@
   </dialog>
 
   <dialog class="dialogo doacao" id="doacao" aria-labelledby="doacao-titulo">
-    <form method="dialog" class="dialogo-fechar"><button class="btn-x" aria-label="Fechar">×</button></form>
+    <form method="dialog" class="dialogo-fechar"><button class="btn-x" aria-label="Fechar"><svg class="ic" aria-hidden="true"><use href="#i-fechar"/></svg></button></form>
     <h2 id="doacao-titulo">Apoie o projeto</h2>
     <p>Esta ferramenta é gratuita e feita nas horas vagas. Se ela te poupou tempo, uma doação via Pix ajuda a mantê-la — <b>você escolhe o valor</b>.</p>
     <figure class="pix-qr" id="pix-qr-box">

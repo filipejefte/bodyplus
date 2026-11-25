@@ -89,9 +89,13 @@
   let D = { treinos: [], porChave: new Map(), base: new Map() };
   const UI = {
     filtro: 'tudo', esconderPassadas: true, sel: new Set(), aberto: null, catalogo: null,
+    // visão: 'semanas' (lista) ou 'calendario' (mês); mes = 'AAAA-MM', dia = dia escolhido no calendário
+    vista: lerVista(), mes: null, dia: null,
     envio: { agendar: 'mover', existente: 'pular', simular: false }, script: null, importacao: null,
   };
 
+  function lerVista() { try { return localStorage.getItem('bodyplus:vista') === 'calendario' ? 'calendario' : 'semanas'; } catch (e) { return 'semanas'; } }
+  const ICONE_AVISO = '<svg class="ic ic-mini" aria-hidden="true"><use href="#i-aviso"/></svg>';
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (v) => String(v === null || v === undefined ? '' : v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -369,7 +373,9 @@
 
   function renderFiltros() {
     $$('#filtro button').forEach((b) => b.classList.toggle('ativo', b.dataset.f === UI.filtro));
+    $$('#vista button').forEach((b) => { const on = b.dataset.v === UI.vista; b.classList.toggle('ativo', on); b.setAttribute('aria-pressed', on); });
     $('#cfg-passadas').checked = UI.esconderPassadas;
+    $('#cfg-passadas-box').hidden = UI.vista === 'calendario';   // o calendário mostra o mês inteiro
   }
 
   function cartao(t) {
@@ -379,7 +385,7 @@
     if (t.data === hoje) badges.push('<span class="badge badge-hoje">hoje</span>');
     if (t.novo) badges.push('<span class="badge badge-novo">novo</span>');
     else if (t.editado) badges.push('<span class="badge badge-editado">editado</span>');
-    if (t.avisos.length) badges.push(`<span class="badge badge-aviso" title="${esc(t.avisos.join('\n'))}">⚠ ${t.avisos.length}</span>`);
+    if (t.avisos.length) badges.push(`<span class="badge badge-aviso" title="${esc(t.avisos.join('\n'))}">${ICONE_AVISO}${t.avisos.length}</span>`);
     const meta = t.tipo === 'cardio' ? (t.duracaoMin ? `~${t.duracaoMin} min` : '') : esc(t.resumo);
     return `
       <article class="cartao fam-${FAMILIA[t.esporte] || 'outro'} ${passado ? 'passado' : ''} ${sel ? 'sel' : ''} ${t.bloqueado ? 'bloqueado' : ''}" data-chave="${esc(t.chave)}">
@@ -396,7 +402,93 @@
       </article>`;
   }
 
+  /** Desenha a visão escolhida (lista de semanas ou calendário do mês). */
   function renderSemanas() {
+    $('#semanas').setAttribute('aria-label', UI.vista === 'calendario' ? 'Calendário de treinos' : 'Treinos por semana');
+    if (UI.vista === 'calendario' && D.treinos.length) renderCalendario();
+    else renderLista();
+  }
+
+  // ---------------------------------------------------------------------
+  // Calendário do mês: cada treino aparece com o perfil dele; o dia escolhido
+  // mostra os cartões completos embaixo (no celular, o toque escolhe o dia)
+  // ---------------------------------------------------------------------
+  const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+  const DIAS_CAB = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+  const porExtenso = (iso) => { const s = new Date(iso + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }); return s.charAt(0).toUpperCase() + s.slice(1); };
+  function rotuloCurto(t) {
+    if (t.tipo === 'musculacao') return B.grupoCurto(t.grupo) || 'Musculação';
+    return B.ESPORTES[t.esporte].nome + (t.duracaoMin ? ` ${t.duracaoMin} min` : '');
+  }
+  function irParaMes(mes) {
+    UI.mes = mes;
+    if (!UI.dia || UI.dia.slice(0, 7) !== mes) {
+      // escolhe hoje, se for deste mês; senão o primeiro dia com treino; senão o dia 1
+      const doMes = D.treinos.filter((t) => t.data && t.data.slice(0, 7) === mes && visivel(t)).map((t) => t.data).sort();
+      UI.dia = hoje.slice(0, 7) === mes ? hoje : doMes[0] || mes + '-01';
+    }
+  }
+  function mesVizinho(mes, delta) {
+    const [a, m] = mes.split('-').map(Number);
+    const d = new Date(a, m - 1 + delta, 1);
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
+  }
+
+  function renderCalendario() {
+    if (!UI.mes) irParaMes(hoje.slice(0, 7));
+    const [ano, mes] = UI.mes.split('-').map(Number);
+    const ultimo = `${UI.mes}-${pad2(new Date(ano, mes, 0).getDate())}`;
+    const ini = B.segundaDe(UI.mes + '-01');
+    const fim = B.addDias(B.segundaDe(ultimo), 6);
+    const porDia = new Map();
+    for (const t of D.treinos) {
+      if (!t.data || !visivel(t) || t.data < ini || t.data > fim) continue;
+      if (!porDia.has(t.data)) porDia.set(t.data, []);
+      porDia.get(t.data).push(t);
+    }
+    let celulas = '';
+    for (let d = ini; d <= fim; d = B.addDias(d, 1)) {
+      const ts = porDia.get(d) || [];
+      const classes = [d.slice(0, 7) !== UI.mes && 'fora', d === hoje && 'hoje', d < hoje && 'passou', d === UI.dia && 'escolhido'].filter(Boolean).join(' ');
+      celulas += `
+        <div class="cal-celula ${classes}" role="gridcell">
+          <button class="cal-num" data-dia="${d}" aria-pressed="${d === UI.dia}" aria-label="${esc(porExtenso(d))}${ts.length ? `, ${ts.length} treino${ts.length > 1 ? 's' : ''}` : ''}"><span class="cal-n">${Number(d.slice(8))}</span></button>
+          <button class="cal-add" data-novo-em="${d}" aria-label="Novo treino em ${esc(porExtenso(d))}">+</button>
+          ${ts.length ? `<div class="cal-itens">
+            ${ts.slice(0, 3).map((t) => `<button class="cal-item fam-${FAMILIA[t.tipo === 'musculacao' ? 'musculacao' : t.esporte] || 'outro'} ${UI.sel.has(t.chave) ? 'sel' : ''}" data-abrir="${esc(t.chave)}" title="${esc(t.nome)}"><span class="cal-item-nome">${esc(rotuloCurto(t))}</span>${perfil(t.payload, 'perfil-mini')}</button>`).join('')}
+            ${ts.length > 3 ? `<button class="cal-mais" data-dia="${d}">+${ts.length - 3}</button>` : ''}
+          </div>` : ''}
+        </div>`;
+    }
+    const doDia = D.treinos.filter((t) => t.data === UI.dia && visivel(t));
+    const semData = D.treinos.filter((t) => !t.data && visivel(t)).length;
+    $('#semanas').innerHTML = `
+      <section class="cal">
+        <header class="cal-topo">
+          <h2>${MESES[mes - 1]} <span>${ano}</span></h2>
+          <div class="cal-nav">
+            <button class="btn-icone" data-mes="-1" aria-label="Mês anterior"><svg class="ic" aria-hidden="true"><use href="#i-anterior"/></svg></button>
+            <button class="btn-mini" data-mes="hoje">Hoje</button>
+            <button class="btn-icone" data-mes="1" aria-label="Próximo mês"><svg class="ic" aria-hidden="true"><use href="#i-proximo"/></svg></button>
+          </div>
+        </header>
+        <div class="cal-grade" role="grid" aria-label="${MESES[mes - 1]} de ${ano}">
+          <div class="cal-cab" role="row">${DIAS_CAB.map((d) => `<span role="columnheader">${d}</span>`).join('')}</div>
+          <div class="cal-dias" role="row">${celulas}</div>
+        </div>
+      </section>
+      <section class="cal-lista" aria-live="polite">
+        <header class="semana-topo">
+          <h2>${esc(porExtenso(UI.dia))}</h2>
+          ${UI.dia === hoje ? '<span class="tag tag-agora">hoje</span>' : ''}
+          <span class="semana-acoes"><button class="btn-mini" data-novo-em="${UI.dia}">+ treino neste dia</button></span>
+        </header>
+        ${doDia.length ? `<div class="cartoes">${doDia.map(cartao).join('')}</div>` : '<p class="semana-vazia">Nenhum treino neste dia.</p>'}
+        ${semData ? `<p class="nota">${semData} treino${semData > 1 ? 's' : ''} sem data não aparece${semData > 1 ? 'm' : ''} no calendário: veja em Semanas.</p>` : ''}
+      </section>`;
+  }
+
+  function renderLista() {
     const alvo = $('#semanas');
     if (!D.treinos.length) {
       alvo.innerHTML = `
@@ -471,14 +563,19 @@
     const comAviso = sel.filter((t) => t.avisos.length);
     if (comAviso.length) avisos.push(`${comAviso.length} com aviso (exercício sem par no De-para fica de fora do treino).`);
     const bloq = D.treinos.filter((t) => t.bloqueado).length;
-    if (bloq) avisos.push(`${bloq} treino${bloq > 1 ? 's' : ''} com problema não ${bloq > 1 ? 'podem' : 'pode'} ser enviado${bloq > 1 ? 's' : ''} — veja o ⚠ no cartão.`);
+    if (bloq) avisos.push(`${bloq} treino${bloq > 1 ? 's' : ''} com problema não ${bloq > 1 ? 'podem' : 'pode'} ser enviado${bloq > 1 ? 's' : ''} — veja o aviso no cartão.`);
     $('#avisos-envio').textContent = avisos.join(' ');
     $('#btn-gerar').disabled = !sel.length;
     $('#btn-apagar').disabled = !sel.length;
     $('#btn-apagar').textContent = (UI.envio.simular ? 'Simular: apagar' : 'Apagar') + (COM_EXTENSAO ? ' do Garmin' : ' do Garmin (script)');
     $('#limpar-nota').textContent = UI.envio.simular
       ? 'só simulação: mostra o que tiraria, sem mexer'
-      : 'tudo, não só os selecionados · pede confirmação' + (COM_EXTENSAO ? '' : ' · gera um script');
+      : 'tudo, não só os selecionados; pede confirmação' + (COM_EXTENSAO ? '' : '; gera um script');
+    $('#resumo-opcoes').textContent = [
+      { mover: 'datas daqui', manter: 'mantém as datas do Garmin', nao: 'sem calendário' }[UI.envio.agendar],
+      UI.envio.existente === 'substituir' ? 'substitui existentes' : 'pula existentes',
+      UI.envio.simular && 'só simulação',
+    ].filter(Boolean).join(', ');
     $('#dica-extensao').hidden = COM_EXTENSAO && EXT_EM_DIA;
     if (COM_EXTENSAO && !EXT_EM_DIA) { $('#dica-extensao').textContent = EXT_VELHA; $('#dica-extensao').classList.add('aviso-txt'); }
     $('#btn-gerar').textContent = COM_EXTENSAO
@@ -650,7 +747,7 @@
     ts.forEach((t) => t.avisos.forEach((a) => { const m = a.match(/^"(.+)" sem par no De-para/); if (m) semPar.add(m[1]); }));
     const itens = [...(I.avisos || [])];
     if (colidem) itens.push(`${colidem} treino${colidem > 1 ? 's têm' : ' tem'} o mesmo nome de um que já está aqui. Para adicionar sem misturar, escreva um prefixo (ex.: 3K) — ou use "Substituir tudo".`);
-    if (semPar.size) itens.push(`${semPar.size} exercício${semPar.size > 1 ? 's' : ''} sem par no catálogo do Garmin (${[...semPar].slice(0, 4).join(', ')}${semPar.size > 4 ? '…' : ''}): depois, abra o treino com ⚠ e clique em "escolher".`);
+    if (semPar.size) itens.push(`${semPar.size} exercício${semPar.size > 1 ? 's' : ''} sem par no catálogo do Garmin (${[...semPar].slice(0, 4).join(', ')}${semPar.size > 4 ? '…' : ''}): depois, abra o treino com aviso e clique em "escolher".`);
     $('#imp-resumo').innerHTML = `
       <p><b>${ts.length - nM}</b> cardio · <b>${nM}</b> musculação${I.semanas ? ` · ${I.semanas} semanas` : ''}${I.titulo ? ` · ${esc(I.titulo)}` : ''}
       ${datas.length ? `<br>De <b>${fmtData(datas[0])}</b> a <b>${fmtData(datas[datas.length - 1])}</b>.` : ''}</p>
@@ -791,7 +888,7 @@
       const m = dp[up] || dp['~' + B.chaveSolta(up)];
       const garmin = m && m.cat && m.ex
         ? `<button class="chip" data-mapa="${esc(r._id)}" title="Trocar o exercício do Garmin (vale para todos os treinos com esse nome)">${esc(m.ex.replace(/_/g, ' ').toLowerCase())}</button>`
-        : `<button class="chip chip-aviso" data-mapa="${esc(r._id)}">⚠ escolher</button>`;
+        : `<button class="chip chip-aviso" data-mapa="${esc(r._id)}">${ICONE_AVISO}escolher</button>`;
       return `
         <tr class="${faixa ? 'faixa' : ''}" data-id="${esc(r._id)}">
           <td><input type="number" min="1" step="1" data-mc="bloco" value="${esc(r.bloco)}" class="estreito" aria-label="Bloco"></td>
@@ -837,7 +934,7 @@
     const corpo = linhas.map((l) => (l.tipo === 'repeat'
       ? `<li class="p-repeat"><b>${l.series}×</b><ol>${l.filhos.map(passo).join('')}</ol></li>`
       : passo(l))).join('');
-    const avisos = t.avisos.length ? `<ul class="avisos">${t.avisos.map((a) => `<li>⚠ ${esc(a)}</li>`).join('')}</ul>` : '';
+    const avisos = t.avisos.length ? `<ul class="avisos">${t.avisos.map((a) => `<li>${esc(a)}</li>`).join('')}</ul>` : '';
     const novaData = t.dataMudou ? `<p class="renome">A data mudou de <b>${fmtData(t.dataAntiga)}</b> para <b>${fmtData(t.data)}</b>. Para mover no Garmin, envie com "Colocar na data daqui".</p>` : '';
     const renome = t.antigos.length ? `<p class="renome">O nome mudou de <b>${esc(t.antigos.join(', '))}</b> para <b>${esc(t.nome)}</b>. No envio, o treino antigo é substituído por este.</p>` : '';
     alvo.innerHTML = `
@@ -1084,7 +1181,7 @@
     qr.src = PIX.qr;
     if (PIX.copiaECola) { $('#pix-cc').textContent = PIX.copiaECola; $('#pix-cc-box').hidden = false; }
     if (PIX.recebedor) { $('#pix-recebedor').textContent = `Recebedor: ${PIX.recebedor}`; $('#pix-recebedor').hidden = false; }
-    $('#btn-apoiar').addEventListener('click', () => { $('.menu').open = false; $('#doacao').showModal(); });
+    document.addEventListener('click', (e) => { if (e.target.closest('[data-apoiar]')) $('#doacao').showModal(); });
     $$('dialog').forEach((d) => d.addEventListener('click', (e) => { if (e.target === d) d.close(); })); // clique fora fecha
     $('#btn-copiar-chave').addEventListener('click', () => copiarTexto(PIX.chave, 'Chave Pix copiada. Obrigado pelo apoio!'));
     $('#btn-copiar-cc').addEventListener('click', () => copiarTexto(PIX.copiaECola, 'Código Pix copiado — cole no app do banco.'));
@@ -1120,6 +1217,13 @@
       renderFiltros(); renderSemanas();
     });
     $('#cfg-passadas').addEventListener('change', (e) => { UI.esconderPassadas = e.target.checked; renderSemanas(); });
+    $('#vista').addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-v]');
+      if (!b || b.dataset.v === UI.vista) return;
+      UI.vista = b.dataset.v;
+      try { localStorage.setItem('bodyplus:vista', UI.vista); } catch (err) { /* ok */ }
+      renderFiltros(); renderSemanas();
+    });
 
     // cartões
     $('#semanas').addEventListener('change', (e) => {
@@ -1138,7 +1242,25 @@
     });
     $('#semanas').addEventListener('click', (e) => {
       const b = e.target.closest('[data-abrir]');
-      if (b) abrir(b.dataset.abrir);
+      if (b) { abrir(b.dataset.abrir); return; }
+      const dia = e.target.closest('[data-dia]');
+      if (dia) {
+        UI.dia = dia.dataset.dia;
+        if (UI.dia.slice(0, 7) !== UI.mes) irParaMes(UI.dia.slice(0, 7));
+        renderSemanas();
+        // no celular a lista do dia fica embaixo da grade: rola até ela
+        if (matchMedia('(max-width: 760px)').matches) $('.cal-lista').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        else $(`[data-dia="${UI.dia}"]`).focus();
+        return;
+      }
+      const m = e.target.closest('[data-mes]');
+      if (m) {
+        irParaMes(m.dataset.mes === 'hoje' ? hoje.slice(0, 7) : mesVizinho(UI.mes, Number(m.dataset.mes)));
+        if (m.dataset.mes === 'hoje') UI.dia = hoje;
+        renderSemanas();
+        const foco = $(`[data-mes="${m.dataset.mes}"]`);
+        if (foco) foco.focus();
+      }
     });
 
     // envio
