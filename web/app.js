@@ -1024,17 +1024,20 @@
     aplicouEdicao(true);
   }
 
+  /** Linha do aquecimento automático (sem séries) de um treino de musculação: superiores ou inferiores conforme o grupo. */
+  function linhaAquecimento(r0) {
+    return {
+      ...camposSessao(r0), _id: novoId(), bloco: 1, tecnica: 'AQUECIMENTO',
+      exercicio: B.tipoAquecimento(r0.grupo) === 'inferiores' ? 'FLEXIBILIDADE E MOBILIDADE PRÉ TREINO DE INFERIORES' : 'AQUECIMENTO/MOBILIDADE PRÉ TREINO DE SUPERIORES',
+      series: null, reps: null, descanso_seg: null, notas: null,
+    };
+  }
+
   function alternarAquecimento(ligar) {
     const rows = linhasMusc(D.porChave.get(UI.aberto));
     const aq = rows.find((r) => vazio(r.series) || !Number(r.series));
     if (ligar && !aq) {
-      const grupo = rows[0] ? rows[0].grupo : '';
-      const nova = {
-        ...camposSessao(rows[0]), _id: novoId(), bloco: 1, tecnica: 'AQUECIMENTO',
-        exercicio: B.tipoAquecimento(grupo) === 'inferiores' ? 'FLEXIBILIDADE E MOBILIDADE PRÉ TREINO DE INFERIORES' : 'AQUECIMENTO/MOBILIDADE PRÉ TREINO DE SUPERIORES',
-        series: null, reps: null, descanso_seg: null, notas: null,
-      };
-      S.atual.musculacao.splice(S.atual.musculacao.indexOf(rows[0]), 0, nova);
+      S.atual.musculacao.splice(S.atual.musculacao.indexOf(rows[0]), 0, linhaAquecimento(rows[0]));
     } else if (!ligar && aq) {
       S.atual.musculacao = S.atual.musculacao.filter((r) => r !== aq);
     }
@@ -1364,7 +1367,7 @@
 
   // Ponte para o assistente (web/assistente.js): ler os treinos e aplicar mudanças com desfazer.
   window.BodyApp = {
-    hoje, novoId, fmtData, NOVO, NOVO_PADRAO,
+    hoje, novoId, fmtData, NOVO, NOVO_PADRAO, linhaAquecimento,
     treinos: () => (D.treinos || []),
     linhas: () => S.atual,
     exercicios: () => [...new Set((S.atual.depara || []).map((d) => String(d.exercicio_pt || '').trim()).filter(Boolean))],

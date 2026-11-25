@@ -51,6 +51,7 @@
             reps: num, esforco_min: num, esforco_zona: int, recuperacao_min: num, recuperacao_zona: int,
             aquecimento_min: num, desaquecimento_min: num, distancia_km: num, notas: str,
             grupo: str,
+            aquecimento: { type: 'boolean' },   // musculação: liga/desliga o aquecimento automático
             exercicios: {
               type: 'array',
               items: { type: 'object', properties: { exercicio: str, series: int, reps: str, descanso_seg: int }, required: ['exercicio', 'series', 'reps'] },
@@ -75,6 +76,8 @@
 
   const cardioDe = (id) => A.linhas().cardio.find((x) => 'c|' + x._id === id);
   const exerciciosDe = (id) => A.linhas().musculacao.filter((x) => 'm|' + B.sessaoDe(x) === id && Number(x.series));
+  const ehAquecimento = (x) => !Number(x.series);   // linha sem séries = aquecimento automático
+  const temAquecimento = (id) => A.linhas().musculacao.some((x) => 'm|' + B.sessaoDe(x) === id && ehAquecimento(x));
 
   /** Semana e dia de uma data, como o modelo usa nas ações: "sexta" sem ele ter de calcular o dia da semana. */
   function quando(iso) {
@@ -96,7 +99,7 @@
         }
         const rows = exerciciosDe(t.chave);
         return semVazios({
-          ...base, modalidade: 'musculacao', grupo: rows[0] && rows[0].grupo,
+          ...base, modalidade: 'musculacao', grupo: rows[0] && rows[0].grupo, aquecimento: temAquecimento(t.chave),
           exercicios: rows.map((x) => semVazios({ exercicio: x.exercicio, series: x.series, reps: x.reps, descanso_seg: x.descanso_seg })),
         });
       });
@@ -158,6 +161,9 @@
       '  reps é texto: "12" (todas as séries) ou "15-12-10" (pirâmide, uma por série). Prefira os nomes da lista de exercícios conhecidos (já têm par no Garmin).',
       '  Ao montar um treino de musculação: 5 a 7 exercícios que cubram os grupos pedidos, 3 ou 4 séries.',
       '- musculacao: grupo curto, com barras ("Costas/Bíceps/Antebraço", não "Costas, Bíceps e Antebraço").',
+      '  aquecimento: true liga o "aquecimento automático" (um bloco de mobilidade no início, de superiores ou inferiores conforme o grupo; não é um exercício da lista); false desliga.',
+      '  Cada treino da lista diz se já tem. Para ligar ou desligar num treino existente: {"acao":"alterar","id":"…","aquecimento":true}, sem mais nada.',
+      '  "aquecimento automático em todos os treinos" = um alterar desses para cada treino de musculação da lista que ainda não tem. No cardio, o aquecimento é aquecimento_min.',
       '- nome: se a pessoa der letra ou nome aos treinos ("treino A", "B"…), use "Treino A · <grupo>"; senão deixe vazio (nome automático).',
       '',
       'Ao montar um plano, varie os treinos da semana. Corrida: um leve (contínuo, Z2), um intervalado (tiros em Z4 com recuperação em Z1) e um longo (contínuo, Z2, mais tempo).',
@@ -249,7 +255,7 @@
       if (a.modalidade === 'musculacao') {
         const n = (a.exercicios || []).filter((e) => e.exercicio).length;
         if (!n) return { erro: 'treino de musculação sem exercícios' };
-        return { texto: `Criar musculação${a.grupo ? ' · ' + a.grupo : ''} em ${quandoTxt(a)}: ${listaEx(a.exercicios)}` };
+        return { texto: `Criar musculação${a.grupo ? ' · ' + a.grupo : ''} em ${quandoTxt(a)}: ${a.aquecimento ? 'aquecimento automático, ' : ''}${listaEx(a.exercicios)}` };
       }
       if (!B.ESPORTES[a.modalidade]) return { erro: `modalidade "${a.modalidade}" não existe` };
       const final = { ...(A.NOVO[a.modalidade] || A.NOVO_PADRAO), ...semVazios(Object.fromEntries(CAMPOS_CARDIO.map((c) => [c, a[c]]))) };
@@ -273,6 +279,10 @@
     const partes = [];
     for (const c of campos) {
       if (c === 'exercicios') { partes.push(...mudancasEx(ex0, a.exercicios)); continue; }
+      if (c === 'aquecimento') {
+        if (!c0 && a.aquecimento !== temAquecimento(a.id)) partes.push(`${a.aquecimento ? 'liga' : 'desliga'} o aquecimento automático`);
+        continue;
+      }
       const novo = c === 'tipo' ? B.tipoCardio(a) : a[c];
       const velho = antes[c];
       if (String(velho ?? '') === String(novo)) continue;
@@ -341,6 +351,7 @@
         const nome = !a.nome ? null : comData ? `${data.slice(8, 10)}/${data.slice(5, 7)} · ${a.nome}` : a.nome;
         if (a.modalidade === 'musculacao') {
           const sessao = A.novoId();
+          if (a.aquecimento) atual.musculacao.push(A.linhaAquecimento({ sessao, data, nome, grupo: a.grupo || '' }));
           linhasMusc(atual, a).forEach((r) => atual.musculacao.push({ ...r, sessao, data, nome, grupo: a.grupo || '' }));
         } else {
           atual.cardio.push({ _id: A.novoId(), data, esporte: a.modalidade, nome, aquecimento_min: 0, desaquecimento_min: 0, ...(A.NOVO[a.modalidade] || A.NOVO_PADRAO), ...valores(a) });
@@ -365,13 +376,19 @@
     }
     const sessao = { ...m[0] };
     ['data', 'nome', 'grupo'].forEach((k) => { if (a[k]) sessao[k] = a[k]; });
+    m.forEach((r) => ['data', 'nome', 'grupo'].forEach((k) => { if (a[k]) r[k] = a[k]; }));
     if ((a.exercicios || []).length) {
-      const pos = atual.musculacao.indexOf(m[0]);
-      atual.musculacao = atual.musculacao.filter((r) => !m.includes(r));
+      // troca só os exercícios: a linha do aquecimento automático (sem séries) fica onde está
+      const velhas = m.filter((r) => !ehAquecimento(r));
+      const pos = velhas.length ? atual.musculacao.indexOf(velhas[0]) : atual.musculacao.length;
+      atual.musculacao = atual.musculacao.filter((r) => !velhas.includes(r));
       const base = Object.fromEntries(['sessao', 'data', 'nome', 'grupo', 'prefixo', 'plano', 'semana', 'treino'].map((k) => [k, sessao[k] === undefined ? null : sessao[k]]));
       atual.musculacao.splice(pos, 0, ...linhasMusc(atual, a).map((r) => ({ ...base, ...r })));
-    } else {
-      m.forEach((r) => ['data', 'nome', 'grupo'].forEach((k) => { if (a[k]) r[k] = a[k]; }));
+    }
+    if (typeof a.aquecimento === 'boolean') {
+      const rows = muscDe(a.id), aq = rows.find(ehAquecimento);
+      if (a.aquecimento && !aq) atual.musculacao.splice(atual.musculacao.indexOf(rows[0]), 0, A.linhaAquecimento(rows[0]));
+      if (!a.aquecimento && aq) atual.musculacao = atual.musculacao.filter((r) => r !== aq);
     }
   }
 
@@ -396,6 +413,8 @@
     const boas = itens.filter((i) => i.texto);
     const ruins = itens.filter((i) => i.erro);
     const d = adicionar(`<p>${esc(saida.resposta || (boas.length ? 'Proponho:' : 'Não entendi; pode explicar de outro jeito?'))}</p>`, 'ia-ela');
+    // o modelo propôs algo, mas tudo já estava assim (ex.: ligar um aquecimento que já está ligado)
+    if (saida.acoes.length && !itens.length) d.insertAdjacentHTML('beforeend', '<p class="ia-status">Nada a mudar: os treinos já estão assim.</p>');
     if (!itens.length) return;
     const caixa = document.createElement('div');
     caixa.className = 'ia-acoes';
