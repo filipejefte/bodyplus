@@ -1,5 +1,5 @@
 /**
- * Time Híbrido → Garmin · leitura do PDF do plano no navegador
+ * Body+ · leitura do PDF do plano do Time Híbrido no navegador
  * ============================================================
  * Port do pdf_para_planilha.py (pdfplumber) para pdf.js. Tudo roda no
  * navegador — o PDF não sai da sua máquina.
@@ -294,29 +294,8 @@
     return { corrida, musculacao, semanas: total, avisos, plano };
   }
 
-  const LEIA_ME = [
-    ['Time Híbrido — planilha de treinos (fonte da verdade)'],
-    [null],
-    ['Gerada a partir do PDF pela interface web. Confira os valores antes de publicar'],
-    ['(a leitura do PDF é heurística).'],
-    [null],
-    ['Aba CORRIDA — cada linha é um treino:'],
-    ["  'tipo': intervalado (reps/esforço/recuperação) · contínuo (só esforço) · prova (distância)."],
-    ["  'notas' aparece na descrição do treino no relógio."],
-    [null],
-    ['Aba MUSCULAÇÃO — cada linha é um exercício:'],
-    ["  bi-set/super-set aparecem como linhas seguidas com o mesmo 'bloco'."],
-    ["  'descanso_seg' vem com padrão 60s (o PDF não especifica) — ajuste à vontade."],
-    [null],
-    ['Aba DE-PARA — mapeia cada exercício para o catálogo do Garmin:'],
-    ['  par (garmin_category / garmin_exercise) é o identificador do Garmin.'],
-    ["  'confianca': alta/média/baixa. Revise as BAIXA (máquinas sem equivalente exato)."],
-    [null],
-    ['Zonas de FC (defina no Garmin por % da FCmáx):'],
-    ['  Z1 50–59% · Z2 60–69% · Z3 70–79% · Z4 80–89% · Z5 90–95%'],
-  ];
 
-  const API = { carregarPdfJs, extrairPaginas, linhasDaPagina, parseCorrida, parseMusculacao, lerPlano, LEIA_ME };
+  const API = { carregarPdfJs, extrairPaginas, linhasDaPagina, parseCorrida, parseMusculacao, lerPlano };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   else raiz.THPdf = API;
 })(typeof window !== 'undefined' ? window : globalThis);

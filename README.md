@@ -1,422 +1,184 @@
-# Time Híbrido → Garmin Connect
+# Body+
 
-Cria e agenda no calendário do Garmin Connect os treinos das 12 semanas do plano
-Time Híbrido (5 km, Iniciante Nível 2): **corrida** e **musculação**, a partir
-da planilha `data/time_hibrido.xlsx`.
+Meus treinos — corrida, bike, musculação, yoga, natação, o que for — cada um
+na sua data, e enviados para o calendário do Garmin Connect por um script
+colado na aba do navegador já logada. Sem login pelo script, sem bloqueio 429.
 
-Há dois jeitos de usar:
+É uma página estática (`index.html` + `web/`). Tudo roda no navegador: as
+edições ficam guardadas nele até você baixar a planilha.
 
-- **Interface web** (abaixo) — abre no navegador, mostra os treinos da planilha,
-  deixa editar e gera um script que você cola na aba do Garmin Connect já
-  logada. Não precisa instalar nada nem fazer login pelo script.
-- **Linha de comando / app Streamlit** (Python) — o fluxo original, descrito
-  mais abaixo.
-
-## Interface web (ver, editar e enviar pela aba do navegador)
-
-`index.html` + `web/` formam uma página estática: roda direto no GitHub Pages
-ou em qualquer servidor simples. Tudo acontece no seu navegador — a planilha
-não é enviada para lugar nenhum.
-
-**O que dá para fazer**
-
-- Abrir o **PDF do plano do Time Híbrido** direto na página (botão *Abrir PDF ou
-  planilha*): a leitura acontece no navegador, com as mesmas regras do
-  `pdf_para_planilha.py`, e os exercícios já vêm ligados ao catálogo do Garmin
-  pelo De-para padrão (`web/depara.js`). Lê durações em minutos e em segundos
-  (`30 SEG`), prova por km e os detalhes do PDF (ex.: `( BULGARO 12 CADA PERNA )`).
-  Um plano aberto por PDF começa na próxima segunda — mude no campo do topo.
-  Confira os treinos depois de abrir e use *Baixar planilha* para guardar em `.xlsx`.
-- **Prefixo nos nomes** (opcional): para ter dois planos no Garmin sem misturar
-  (ex.: `3K S01 · Intervalado 1:1` ao lado do `S01 · Intervalado 1:1` do plano
-  anterior).
-- Ver os 95 treinos por semana, com a data calculada a partir da segunda-feira
-  da semana 1 e dos dias da musculação (A=Sáb, B=Dom, C=Seg, D=Ter, E=Qua).
-- Clicar num treino para editar: corrida (dia, tipo, repetições, tempos,
-  zonas, notas) ou musculação (exercícios, blocos, séries, reps, descanso,
-  aquecimento, exercício do Garmin no De-para). A prévia mostra como fica no
-  relógio. As edições ficam guardadas no navegador; **Baixar planilha** gera o
-  `.xlsx` atualizado para substituir o `data/time_hibrido.xlsx`.
-- Selecionar o que enviar e **Gerar script**.
-
-**Apoie o projeto** — o botão *Apoiar o projeto*, no topo, abre o Pix para
-doação (valor livre). A chave e o QR ficam no topo de `web/app.js` (`PIX`) e em
-`assets/pix-qr.png`.
-
-**Enviar ao Garmin**
-
-1. Na página, selecione os treinos (o padrão é "de hoje em diante") e clique em
-   **Gerar script** → **Copiar script**.
-2. Abra https://connect.garmin.com/app/calendar já logado.
-3. `F12` → aba **Console** → cole → `Enter`. Se o navegador bloquear a
-   colagem, digite `allow pasting` e cole de novo.
-4. Quando o painel verde no canto pedir, clique na seta ‹ › do mês (ou em
-   **Ano**): é assim que o script pega o token da sua sessão.
-
-O painel mostra o progresso e, no fim, confere no Garmin se tudo ficou certo
-(treinos criados, sem nome duplicado, datas no calendário).
-
-**Opções do envio**
-
-| Opção | O que faz |
-|-------|-----------|
-| Manter as datas que já estão no Garmin | Agenda só o que ainda não está no calendário; o que você moveu à mão fica onde está. |
-| Colocar na data do plano | Move os selecionados para a data mostrada na página (use depois de mudar a semana 1 ou o dia de um treino). |
-| Não mexer no calendário | Só cria/atualiza em "Meus treinos". |
-| Se já existe: pular / substituir | Treino com o mesmo nome é reaproveitado ou recriado. Treinos editados na página são substituídos quando estão diferentes do que está no Garmin. |
-| Só simular | Lista no Console o que faria, sem gravar nada. |
-
-**Proteção contra outro plano com os mesmos nomes:** antes de gravar, o script
-compara cada treino com o que já está no Garmin. Se um treino tem o mesmo nome
-mas outro conteúdo (e você não o editou na página), ele **não mexe** nesse treino
-e pergunta no painel se deve continuar só com os outros — a saída é usar um
-prefixo nos nomes ou marcar *Substituir*.
-
-O script é seguro para colar de novo: o que já foi feito é pulado. Se a sessão
-cair no meio, recarregue a página do Garmin, entre na conta se pedir e cole o
-mesmo script — ele continua de onde parou.
-
-**Como funciona por dentro** (caminho validado em 12/08/2026)
-
-- A página não fala direto com o Garmin (é outro domínio). O script roda na aba
-  do Garmin e usa `/gc-api/...` com os cookies da sessão + o header
-  `connect-csrf-token`, que ele captura interceptando uma chamada do próprio app.
-- Os treinos vão compactados (gzip + base64) dentro do script; o código que
-  envia fica legível em `web/uploader.js`.
-- `web/builder.js` monta os treinos com as mesmas regras do projeto Python:
-  corrida no formato do `th_upload_console.js` e musculação igual ao
-  `montar_musculacao.py` (bi-set com descanso no botão Lap, `6 / 12` na mesma
-  série, pirâmide com a sequência na descrição, aquecimento fixo). A saída foi
-  conferida contra o Python: os 60 treinos de musculação e os 35 de corrida
-  saem idênticos.
-- O dedupe é pelo nome (`S01 · Intervalado 1:1`, `S01 A · Peito/Ombro/Tríceps`).
-  Se uma edição muda o nome, o treino com o nome antigo é substituído.
-
-**Rodar localmente**
+## Abrir
 
 ```powershell
 py -m http.server 8000
 ```
 
-e abra http://localhost:8000. (Aberta direto do disco, com dois cliques no
-`index.html`, a página pede para você escolher a planilha.)
+e abra http://localhost:8000. (Aberta direto do disco, a página funciona, mas
+não lê `data/treinos.xlsx` nem o catálogo de exercícios do Garmin.)
 
-**Publicar no GitHub Pages**
+Na primeira abertura ela carrega `data/treinos.xlsx`. Se você já usava a versão
+Time Híbrido neste navegador, as edições guardadas são migradas sozinhas
+(as datas ficam as mesmas).
 
-1. Suba o projeto para um repositório no GitHub.
-2. Settings → Pages → *Build and deployment* → Source: **Deploy from a branch**
-   → Branch: `main` / `(root)` → Save.
-3. A página fica em `https://<seu-usuario>.github.io/<repositorio>/`.
+## Usar
 
-> Num repositório **público**, a planilha `data/time_hibrido.xlsx` (o conteúdo
-> do plano) fica pública junto. Se não quiser, tire `data/time_hibrido.xlsx` do
-> git — a página continua funcionando e pede o arquivo na hora de abrir.
+- **+ Novo treino** (no topo ou o **+ treino** de cada semana): escolha a
+  modalidade e a data, e edite na gaveta que abre.
+  - **Cardio** (corrida, bike, caminhada, trilha, natação, cardio, HIIT, yoga,
+    pilates, mobilidade, outro): intervalado, contínuo, distância ou prova
+    (corrida), com aquecimento/desaquecimento e alvo por zona de FC
+    (ou *sem alvo*).
+  - **Musculação**: exercícios, blocos (mesmo bloco = bi-set), séries, reps,
+    descanso; cada exercício precisa de um par no catálogo do Garmin
+    (clique no chip ⚠ *escolher*).
+- **Duplicar** copia o treino para a semana seguinte; **Excluir** tira da página
+  (no Garmin ele continua — para tirar de lá, use **Apagar do Garmin**).
+- **Importar**: PDF do plano do Time Híbrido ou uma planilha `.xlsx`.
+  - Plano por semanas: escolha a segunda-feira da semana 1 e o dia de cada
+    treino de musculação — cada treino ganha a sua data.
+  - **Adicionar aos meus treinos** soma ao que já está aqui;
+    **Substituir tudo** troca (é como abrir de volta uma planilha baixada).
+  - Prefixo nos nomes (ex.: `3K`) separa dois planos com os mesmos nomes.
+  - Outro tipo de PDF ainda não é lido — só o do Time Híbrido.
+- **Baixar planilha** salva tudo em `.xlsx`. Substitua `data/treinos.xlsx` por
+  ela para guardar no projeto (e editar em massa no Excel, se quiser).
+- Menu **⋯**: recarregar `data/treinos.xlsx`, descartar edições, começar do zero
+  e o Pix de apoio.
 
-Para mudar a âncora padrão (segunda da semana 1), edite `CONFIG_PADRAO` no topo
-de `web/app.js` — ou só troque a data na própria página.
+O traço embaixo de cada cartão é o **perfil do treino**: largura = tempo,
+altura e cor = zona de FC (cinza sem alvo, azul Z2, verde Z3, laranja Z4,
+vermelho Z5; violeta = exercício/esforço sem zona).
 
-## App visual Streamlit
+### Nomes
 
-Em vez da linha de comando, dá para usar o app local: sobe o PDF, revisa em
-tabelas, escolhe os dias da musculação e publica com um clique.
+O Garmin é consultado pelo nome, então cada treino precisa de um nome único:
 
-```powershell
-pip install -r requirements.txt
-streamlit run app.py
-```
+| Origem | Nome automático |
+|--------|-----------------|
+| seu | `25/11 · Contínuo 30 min`, `25/11 · Bike intervalado 4:2`, `26/11 · Pernas` |
+| plano importado | `S01 · Intervalado 1:1`, `S01 A · Peito/Ombro/Tríceps` |
+| com prefixo | `3K S01 · Intervalado 1:1` |
 
-Abre no navegador em `http://localhost:8501` (roda só na sua máquina). O fluxo é:
-subir PDF → revisar (Corrida / Musculação / De-para) → escolher datas e os dias
-de cada treino de musculação → conectar ao Garmin → publicar corrida e/ou musculação.
+Ou escreva um nome seu no campo *Nome no Garmin*. Mudou o nome (ou a data, num
+treino seu) depois de enviar? No próximo envio o treino antigo é substituído.
 
-No primeiro login pode pedir o código MFA (campo próprio no app). Depois, use
-"entrar com sessão salva" — sem senha e sem MFA.
+## Enviar ao Garmin
 
-O restante deste README documenta a **linha de comando**, que o app usa por baixo.
+Nada de senha nem login: o envio usa a sua sessão já aberta no Garmin Connect,
+no mesmo navegador. Há dois jeitos.
 
-## Instalar
+### Com a extensão (um clique)
 
-```powershell
-pip install -r requirements.txt   # garminconnect (+curl_cffi), streamlit, pandas, pdfplumber, openpyxl
-```
+Instale uma vez, no Opera, Chrome ou Edge:
 
-Requer Python 3.10+. No Windows, se `python` abrir a Microsoft Store, use `py`.
+1. Abra a página de extensões (`opera://extensions`, `chrome://extensions` ou
+   `edge://extensions`) e ligue o **Modo de desenvolvedor**.
+2. Clique no botão de carregar extensão descompactada (*Load unpacked*; no
+   Chrome em português, **Carregar sem compactação**) e escolha a pasta
+   `extensao/` deste projeto.
+3. Recarregue o Body+.
 
-## Estrutura do projeto
+Depois disso, selecione os treinos (o padrão é "de hoje em diante") e clique
+em **Enviar ao Garmin**. Uma aba nova abre no calendário do Garmin e o painel
+no canto mostra o progresso e, no fim, confere se tudo ficou certo. Se pedir
+login, entre na conta: o envio começa quando a aba voltar ao calendário.
 
-```
-index.html              # interface web (GitHub Pages) — ver, editar e gerar o script de envio
-web/
-  app.js                # interface: planilha/PDF, semanas, editor, seleção, Pix
-  pdf-plano.js          # leitura do PDF do plano no navegador (port do pdf_para_planilha.py)
-  depara.js             # De-para padrão exercício -> Garmin (de de_para_exercicios.py)
-  builder.js            # planilha -> JSON do Garmin (mesmas regras do Python)
-  uploader.js           # script que roda na aba do Garmin Connect
-  style.css             # visual Time Híbrido
-th_upload_console.js    # script de console original (corrida, validado em 12/08/2026)
-th_limpar_calendario.js # tira do calendário os treinos do plano (sem apagar da biblioteca)
-app.py                  # app visual (Streamlit)
-tema.py                 # identidade visual do Time Híbrido (cores, tipografia, componentes)
-garmin_time_hibrido.py  # CLI principal: prévia, publicação, exclusão
-pdf_para_planilha.py    # PDF do plano → data/time_hibrido.xlsx
-montar_musculacao.py    # monta os treinos de força a partir da planilha
-de_para_exercicios.py   # mapeamento exercício BR → catálogo Garmin
-requirements.txt        # dependências (pip install -r requirements.txt)
-.streamlit/config.toml  # tema base do Streamlit (cores da marca)
-assets/
-  logo_time_hibrido.png # logo do jacaré, extraído do PDF
-data/
-  time_hibrido.xlsx     # planilha do plano (fonte dos treinos)
-  garmin_exercises.json # catálogo Garmin (consulta p/ o De-para)
-garmin-curl.txt         # sessão copiada do navegador (NÃO versionar — já no .gitignore)
-th_preview.json         # prévia gerada pelo --start (gerado, ignorado no git)
-```
+A extensão só entra em `localhost:8000`, `127.0.0.1:8000`, no GitHub Pages do
+projeto e no `connect.garmin.com`. Mudou algum arquivo de `extensao/`? Clique
+em **recarregar** nela, na página de extensões, e depois recarregue o Body+. Se
+esquecer, o Body+ avisa que a extensão está desatualizada e não envia nada (a
+versão antiga faria outra coisa: por exemplo, enviaria em vez de apagar).
 
-Rode os comandos sempre a partir desta pasta (os caminhos padrão são relativos).
+### Sem a extensão (script de colar)
 
-## O visual do app
+1. Selecione os treinos e clique em **Gerar script** → **Copiar script**.
+2. Abra https://connect.garmin.com/app/calendar já logado.
+3. `F12` → aba **Console** → cole → `Enter`. Se o navegador bloquear a
+   colagem, digite `allow pasting` e cole de novo.
+4. Quando o painel no canto pedir, clique na seta ‹ › do mês (ou em **Ano**):
+   é assim que o script pega o token da sua sessão.
 
-O app segue a identidade do PDF do Time Híbrido, e as escolhas não são decorativas
-— vieram do próprio arquivo:
+Nos dois jeitos dá para enviar de novo: o que já foi feito é pulado. Se a
+sessão cair, entre na conta de novo e repita o envio.
 
-- **verde-escuro** (`#042705`) nos títulos condensados em caixa alta, com o
-  **marca-texto verde-neon** (`#3CFF00`) da capa sobre a palavra-chave;
-- **corrida é verde, musculação é azul** — a mesma codificação que o PDF usa nas
-  setas de etapa e nas faixas de cabeçalho de cada treino;
-- as **setas de etapa** (Base → Consolidação → Alvo) viram os 5 passos do app, e
-  acendem conforme você avança;
-- **caixas creme** (`#FDF9B4`) para as notas, com a assinatura "Time Híbrido";
-- o **jacaré** em marca d'água ao fundo, como nas páginas do plano.
+### Apagar do Garmin
 
-Tudo isso mora em [tema.py](tema.py) — mexa lá para ajustar cores ou tipografia.
+**Apagar do Garmin** (logo abaixo do envio) tira do Garmin os treinos
+selecionados: some de "Meus treinos" e do calendário. Funciona com a extensão
+ou pelo script, e respeita o *Só simular*.
 
-## Como o login funciona (importante)
+- Procura pelo nome do treino (e pelos nomes antigos, se você o renomeou).
+  Nada além dos selecionados é tocado.
+- O painel no Garmin mostra quantos vai apagar e pede **Apagar** antes de
+  começar. Não dá para desfazer; para trazer de volta, envie de novo.
+- Treino com o mesmo nome mas outro conteúdo no Garmin (e que você não editou
+  aqui) fica de fora, como no envio: provavelmente é de outro plano.
 
-O login é a única parte sujeita ao bloqueio 429 da Garmin. Por isso o script foi
-montado para **logar uma vez só**:
+### Limpar o Garmin inteiro
 
-- Na **primeira** autenticação ele usa e-mail/senha (variáveis de ambiente) e
-  salva os tokens da sessão em disco.
-- Em **toda execução seguinte** ele retoma a sessão pelos tokens salvos — sem
-  senha e **sem acessar o endpoint de login da Garmin**, então fica imune ao 429.
+No fim do painel de envio, **Limpar o Garmin inteiro** age sobre tudo da conta,
+não só os selecionados (inclusive o que não veio do Body+). Os dois pedem
+confirmação no painel do Garmin e respeitam o *Só simular*.
 
-Ou seja: você só precisa passar pelo login com sucesso **uma vez**.
+- **Calendário**: tira todos os treinos das datas, do ano passado até o ano que
+  vem. Os treinos continuam em "Meus treinos". A lista do que saiu fica no
+  Console da aba do Garmin. Para recolocar os do Body+ nas datas, envie de novo
+  com "Colocar na data daqui".
+- **Meus treinos**: apaga todos os treinos da biblioteca (e, com eles, as
+  datas). Antes de apagar qualquer um, baixa uma cópia de todos em
+  `garmin-meus-treinos-AAAA-MM-DD.json`; se não conseguir ler algum, para sem
+  apagar nada. Os do Body+ voltam se você enviar de novo.
 
-### Credenciais (só na primeira vez)
+Depois de apagar ou limpar, recarregue a página do Garmin (F5): o calendário
+aberto não se atualiza sozinho.
 
-```powershell
-$env:GARMIN_EMAIL = "seu@email.com"
-$env:GARMIN_PASSWORD = "sua_senha"
-```
+Para limpar só esta página (sem mexer no Garmin), use **⋯ → Começar do zero**.
 
-Valem só para a janela atual do PowerShell. Confira com `echo $env:GARMIN_EMAIL`.
-Depois do primeiro login bem-sucedido, **não precisa mais definir isso**.
+| Opção | O que faz |
+|-------|-----------|
+| Colocar na data daqui (padrão) | Agenda ou move os selecionados para a data mostrada na página. |
+| Manter as datas que já estão no Garmin | Agenda só o que ainda não está no calendário; o que você moveu à mão no Garmin fica onde está. |
+| Não mexer no calendário | Só cria/atualiza em "Meus treinos". |
+| Se já existe: pular / substituir | Treino com o mesmo nome é reaproveitado ou recriado. Novos e editados aqui são substituídos quando estão diferentes do Garmin. |
+| Só simular | Lista no Console o que faria, sem gravar nada. |
 
-## Fluxo recomendado
-
-**1) Teste o login (uma requisição só):**
-
-```powershell
-py garmin_time_hibrido.py --check
-```
-
-Faz o login e confirma a sessão. É o comando ideal para verificar se um bloqueio
-429 já passou, sem disparar o upload inteiro. Deu certo uma vez → tokens salvos.
-
-**2) Confira a prévia (offline, não toca no Garmin):**
-
-```powershell
-py garmin_time_hibrido.py --start 2026-07-06
-```
-
-`--start` é a **segunda-feira** da primeira semana enviada. Imprime a agenda e
-grava `th_preview.json`.
-
-**3) Aplique de verdade:**
-
-```powershell
-py garmin_time_hibrido.py --start 2026-07-06 --apply
-```
-
-Cria e agenda os treinos. Rodar de novo é seguro: os que já subiram são
-**pulados** (dedup pelo nome), então dá para retomar de onde parou.
-
-### Nomenclatura dos treinos
-
-Corrida: **`S01 · Intervalado 1:1`** — semana + label da planilha, onde o
-`1:1` é esforço:recuperação em minutos. Musculação: **`S01 A · Peito/Ombro/Tríceps`**.
-
-Sem prefixo e sem o dia da semana: o contexto completo (semana, etapa e a
-estrutura do treino) vai na **descrição**, que aparece no relógio. A semana
-é obrigatória no nome porque sem ela os nomes colidem — `Intervalado 1:1` é
-14, 15 e 16 tiros nas semanas 1, 2 e 3.
-
-> O dedup usa o nome, então mudar esse formato faz o script não reconhecer o
-> que já está no Garmin e criar duplicatas. Se mudar, rode `--delete-th` antes.
-
-### Passo 0 — gerar a planilha a partir do PDF
-
-O `pdf_para_planilha.py` lê um PDF do Time Híbrido e gera a planilha de treinos:
-
-```powershell
-py pdf_para_planilha.py "planilha-treinos.pdf"
-```
-
-Isso cria `data/time_hibrido.xlsx` com quatro abas:
-
-- **Corrida** — os 35 treinos (já publicáveis no Garmin).
-- **Musculação** — todos os exercícios extraídos (série/reps/técnica), um por
-  linha; bi-set e super-set aparecem como linhas seguidas com o mesmo `bloco`.
-- **De-para** — cada exercício mapeado para o catálogo do Garmin, no par
-  `(garmin_category / garmin_exercise)`. A coluna `confianca` marca os casos a
-  revisar (máquinas BR sem equivalente exato). Consulte `data/garmin_exercises.json`
-  para ver todos os pares válidos do catálogo.
-- **Leia-me** — instruções e legenda de zonas.
-
-A publicação da musculação no Garmin está em construção (próxima fase).
-
-A leitura é heurística (offline), então **confira a planilha** antes de publicar
-— qualquer linha é fácil de ajustar. Ciclo novo = rode isso no PDF novo.
-
-### Usando a planilha como fonte (recomendado a partir de agora)
-
-Em vez do plano fixo no código, o script pode ler tudo de uma planilha
-(`data/time_hibrido.xlsx`). Aponte com `--sheet`:
-
-```powershell
-py garmin_time_hibrido.py --sheet data/time_hibrido.xlsx --start 2026-07-06
-py garmin_time_hibrido.py --sheet data/time_hibrido.xlsx --start 2026-07-06 --apply
-```
-
-Cada linha da aba **Corrida** é um treino. Colunas principais:
-
-- `tipo`: `intervalado` (usa reps, esforço e recuperação), `contínuo` (usa só
-  esforço) ou `prova` (usa distância).
-- `esforco_min` / `esforco_zona`, `recuperacao_min` / `recuperacao_zona`,
-  `reps`, `aquecimento_min`, `desaquecimento_min`, `distancia_km`.
-- `notas`: texto livre que aparece na descrição do treino no relógio.
-
-As colunas de dia, tipo, etapa e zona têm **lista suspensa** para evitar erro de
-digitação. A aba **Leia-me** traz as instruções e a legenda de zonas.
-
-**Ciclo novo:** substitua as linhas pela nova planilha (mesmo formato) e rode
-com `--sheet`. Não precisa mexer no código.
-
-**Edição em massa:** troque exercícios/valores direto na planilha (localizar-e-
-substituir, preencher pra baixo) e rode de novo.
-
-### Começar de uma semana específica
-
-`--from-week N` envia só a partir da semana N. Nesse caso `--start` é a segunda
-da primeira semana enviada. Ex.: semana 5 na semana de 06/07:
-
-```powershell
-py garmin_time_hibrido.py --start 2026-07-06 --from-week 5 --apply
-```
-
-## Sobre o erro 429 (limite de login)
-
-> **Contexto (mar/2026):** a Garmin passou a bloquear via Cloudflare o login
-> das bibliotecas não oficiais antigas. O contorno que funciona é o
-> `garminconnect >= 0.3.2` **com `curl_cffi` instalado** (estratégia
-> "widget+cffi", que evita o rate limit por clientId). Os dois já estão no
-> `requirements.txt`; o script confere isso antes de tentar logar. O login por
-> essa estratégia espera 30–45 s de propósito — não interrompa.
-
-Se aparecer `429 / rate limited`: o bloqueio é **na sua conta, não no seu IP** —
-trocar de rede não resolve. Ele é disparado por tentativas de login seguidas.
-
-- **Pare de tentar.** Cada tentativa **renova** o bloqueio. Pode levar de 1h a
-  vários dias para liberar.
-- O script tem uma **trava local**: depois de um 429, ele bloqueia novas
-  tentativas de login por ~1h para você não piorar o quadro. Para ignorar a
-  trava (quando tiver certeza de que já liberou), use `--force`.
-- Sua conta continua funcionando normalmente no app e no site — eles usam um
-  canal separado que não é limitado.
-- Lembre: assim que você passar do login **uma vez**, os tokens ficam salvos e
-  esse problema não volta.
+Treino com o mesmo nome mas outro conteúdo no Garmin (e que você não editou
+aqui) não é tocado: o script pergunta se continua só com os outros.
 
 ## Zonas de FC
 
-Os treinos usam **alvo por Zona de FC** (Z1 aquecimento/recuperação, Z3 esforço,
-Z4 na prova). O relógio segue as zonas da **sua conta** Garmin. Para bater com o
-plano, configure as zonas por **% da FCmáx**:
+O relógio segue as zonas da sua conta. Para bater com os treinos, configure por
+% da FCmáx (Garmin Connect → Configurações → Frequência cardíaca → Zonas):
+Z1 50–59% · Z2 60–69% · Z3 70–79% · Z4 80–89% · Z5 90–95%.
 
-| Zona | % FCmáx |
-|------|---------|
-| Z1   | 50–59%  |
-| Z2   | 60–69%  |
-| Z3   | 70–79%  |
-| Z4   | 80–89%  |
-| Z5   | 90–95%  |
+## Por dentro
 
-(Garmin Connect → Configurações → Frequência cardíaca → Zonas de FC → base "% FCmáx".)
-
-## Recomeçar do zero
-
-```powershell
-py garmin_time_hibrido.py --delete-th --apply
+```
+index.html            página
+web/app.js            interface: semanas, editor, novo treino, importar, envio, Pix
+web/builder.js        linhas da planilha → JSON do Garmin (nomes, passos, datas do plano)
+web/pdf-plano.js      leitura do PDF do Time Híbrido (pdf.js, no navegador)
+web/depara.js         De-para padrão exercício → catálogo do Garmin
+web/style.css         visual
+web/teste.js          conferência do montador e do envio: node web/teste.js
+extensao/uploader.js  envio que roda na aba do Garmin (extensão e script de colar)
+extensao/background.js  abre a aba do Garmin e roda o envio nela
+extensao/ponte.js     liga a página do Body+ à extensão
+extensao/garmin.js    guarda o token da sessão desde o carregamento da aba
+data/treinos.xlsx     seus treinos (abas Cardio, Musculação, De-para)
+data/garmin_exercises.json  catálogo de exercícios do Garmin
 ```
 
-Apaga só os treinos do Time Híbrido — os `S01 · ...` / `S01 A · ...` e também
-os do formato antigo `TH ...` (pede confirmação e lista os nomes antes).
-Treinos seus que não seguem esse padrão não são tocados.
-
-## Todos os comandos
-
-| Comando | O que faz |
-|---------|-----------|
-| `--check` | Testa o login (1 requisição) e sai |
-| `--sheet ARQ.xlsx` | Lê o plano da planilha em vez do plano embutido |
-| `--start DATA` | Prévia offline a partir daquela segunda-feira |
-| `--start DATA --apply` | Cria e agenda no Garmin |
-| `--from-week N` | Começa da semana N (com `--start` = 1ª semana enviada) |
-| `--sheet X --musculacao` | Prévia dos treinos de musculação |
-| `--sheet X --musculacao --apply` | Cria os treinos de musculação no Garmin |
-| `--delete-th --apply` | Apaga os treinos `S01 · ...` e `TH ...` (corrida e musculação) |
-| `--force` | Ignora a trava local de espera pós-429 |
-
-## Ajustar o plano
-
-A estrutura das 12 semanas está na lista `PROGRAMA`, em uma DSL curta:
-
-```python
-intervalado(reps, min_esforço, min_recuperação)   # ex.: intervalado(14, 1, 1)
-continuo(minutos)                                  # ex.: continuo(20)
-prova_5km()                                        # aquec + 5 km Z4 + desaq
-```
-
-## Publicar a musculação
-
-Depois de revisar as abas **Musculação** e **De-para** da planilha:
-
-```powershell
-py garmin_time_hibrido.py --sheet data/time_hibrido.xlsx --musculacao            # prévia
-py garmin_time_hibrido.py --sheet data/time_hibrido.xlsx --musculacao --apply     # cria no Garmin
-```
-
-Isso monta um treino de força por dia (Semana × Treino A–E, 60 no total) e cria
-na sua biblioteca do Garmin (Connect › Treinos). Como o PDF não fixa qual dia da
-semana é cada treino, eles são criados **sem agendar** — você agenda no calendário
-ou escolhe o Treino A–E no relógio a cada dia de academia.
-
-Como funciona a montagem:
-
-- Cada exercício usa o par `(category, exercise)` da aba De-para.
-- Séries iguais (4×15) viram um grupo de repetição; pirâmide (15-12-10-8-6) vira
-  uma série por valor de rep; bi-set/super-set ficam em sequência com descanso ao final.
-- O **nome original do PDF + a técnica** (drop-set, bi-set, pirâmide…) vão na
-  descrição de cada exercício, preservando o que o Garmin não representa nativamente.
-- `descanso_seg` da planilha vira o timer de descanso entre séries.
-
-> Importante: a montagem foi validada offline (estrutura e catálogo), mas a
-> publicação de treino de força por esta API é menos testada que a de corrida.
-> Confirme o primeiro treino no app após criar.
-
-## Limitações
-
-- Técnicas como bi-set/drop-set/pirâmide não têm equivalente nativo no Garmin —
-  viram exercícios em sequência; a técnica fica registrada na nota do exercício.
-- Usa a mesma API interna do app web do Garmin (via `garminconnect`), não a API
-  oficial de parceiros. Funciona bem, mas é engenharia reversa — pode quebrar se
-  o Garmin mudar algo.
+- A página não fala com o Garmin (outro domínio). O envio roda na aba do
+  Garmin e usa `/gc-api/...` com os cookies da sessão + o header
+  `connect-csrf-token`, capturado de uma chamada do próprio app
+  (caminho validado em 12/08/2026). Os treinos vão compactados (gzip + base64).
+  A extensão roda exatamente o mesmo `thEnviar` do script de colar; ela só
+  pula o copiar/colar e o clique no mês.
+- IDs de modalidade do Garmin: corrida 1, bike 2, outro 3, natação 4,
+  musculação 5, cardio 6, yoga 7, pilates 8, HIIT 9, mobilidade 11,
+  caminhada 17, trilha 18. Corrida e musculação foram validadas no Garmin; as
+  outras seguem o mesmo formato — confira com *Só simular* e depois no relógio.
+- Num repositório público, `data/treinos.xlsx` fica público junto (e o GitHub
+  Pages de repositório privado exige plano pago) — por isso o jeito padrão é
+  rodar local.

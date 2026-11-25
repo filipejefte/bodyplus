@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Body+ · envio ao Garmin",
+  "version": "1.1",
+  "description": "Envia os treinos do Body+ para o Garmin Connect com a sessão já logada no navegador, sem colar script.",
+  "permissions": ["scripting", "storage"],
+  "host_permissions": ["https://connect.garmin.com/*"],
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [
+    {
+      "matches": ["http://localhost:8000/*", "http://127.0.0.1:8000/*", "https://filipejefte.github.io/garmin-timehb/*"],
+      "js": ["uploader.js", "ponte.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://connect.garmin.com/*"],
+      "js": ["uploader.js", "garmin.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    }
+  ]
+}

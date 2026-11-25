@@ -1,15 +1,18 @@
 /**
- * Time Híbrido → Garmin · script de envio (roda na aba do Garmin Connect)
- * ======================================================================
- * A UI não fala direto com o Garmin (outro domínio). Ela gera um script que
- * você cola no Console da aba https://connect.garmin.com/app/calendar já
- * logada. O script usa a SUA sessão do navegador — sem senha, sem login,
- * sem o bloqueio 429 do fluxo de login.
+ * Body+ · envio ao Garmin (roda na aba do Garmin Connect)
+ * =======================================================
+ * A UI não fala direto com o Garmin (outro domínio). `thEnviar` roda na aba
+ * https://connect.garmin.com/app/calendar já logada e usa a SUA sessão do
+ * navegador — sem senha, sem login, sem o bloqueio 429 do fluxo de login.
+ * Chega lá de dois jeitos, com o mesmo código:
+ *   - pela extensão desta pasta (background.js), com um clique no Body+;
+ *   - pelo script gerado na UI, colado no Console da aba.
  *
  * Caminho validado em 12/08/2026:
  *   /gc-api/<serviço> (mesma origem) + cookies + header `connect-csrf-token`.
- *   O token CSRF só existe na memória do app: o script intercepta o fetch e
- *   espera o app fazer uma chamada (troque o mês ou clique em "Ano").
+ *   O token CSRF só existe na memória do app: intercepta-se o fetch e espera
+ *   o app fazer uma chamada. A extensão instala esse gancho já no carregamento
+ *   da página (garmin.js); no script colado, é preciso trocar o mês.
  *
  * Endpoints:
  *   GET    /workout-service/workouts?start=0&limit=999&myWorkoutsOnly=true
@@ -36,6 +39,8 @@
       console.error('❌ Cole este script no Console da aba https://connect.garmin.com/app/calendar (logado).');
       return;
     }
+    // extensão (garmin.js): só o gancho do token, desde o carregamento da página
+    if (OPC.soGancho) return instalarGancho();
 
     // ------------------------------------------------------------------
     // Painel de progresso no canto da página
@@ -50,23 +55,24 @@
     };
     const painel = el('div', {
       position: 'fixed', right: '16px', bottom: '16px', zIndex: '2147483647', width: '340px',
-      background: '#042705', color: '#F4F8F3', borderRadius: '12px', padding: '14px 16px',
+      background: '#1C1B33', color: '#F2F1F6', borderRadius: '12px', padding: '14px 16px',
       font: '13px/1.45 system-ui, -apple-system, Segoe UI, sans-serif', boxShadow: '0 12px 32px rgba(0,0,0,.35)',
     });
     painel.id = 'th-painel';
     const topo = el('div', { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' });
-    topo.appendChild(el('strong', { letterSpacing: '.04em', color: '#3CFF00' }, 'TIME HÍBRIDO → GARMIN' + (OPC.simular ? ' · SIMULAÇÃO' : '')));
-    const fechar = el('button', { background: 'none', border: '0', color: '#F4F8F3', fontSize: '18px', cursor: 'pointer', lineHeight: '1' }, '×');
+    const TITULO = { apagar: 'apagar do Garmin', 'limpar-calendario': 'limpar o calendário', 'limpar-biblioteca': 'limpar Meus treinos' }[OPC.acao] || 'envio ao Garmin';
+    topo.appendChild(el('strong', { color: '#B7AAFF' }, 'Body+ · ' + TITULO + (OPC.simular ? ' · SIMULAÇÃO' : '')));
+    const fechar = el('button', { background: 'none', border: '0', color: '#F2F1F6', fontSize: '18px', cursor: 'pointer', lineHeight: '1' }, '×');
     fechar.onclick = () => painel.remove();
     topo.appendChild(fechar);
     const linhaStatus = el('div', { fontWeight: '600', minHeight: '20px' });
     const trilho = el('div', { height: '6px', background: 'rgba(255,255,255,.15)', borderRadius: '3px', margin: '8px 0', overflow: 'hidden' });
-    const barra = el('div', { height: '100%', width: '0%', background: '#3CFF00', transition: 'width .2s' });
+    const barra = el('div', { height: '100%', background: '#B7AAFF', transformOrigin: 'left', transform: 'scaleX(0)', transition: 'transform .2s' });
     trilho.appendChild(barra);
     const detalhe = el('div', { opacity: '.85', fontSize: '12px', whiteSpace: 'pre-line' });
     painel.append(topo, linhaStatus, trilho, detalhe);
     document.body.appendChild(painel);
-    const status = (msg, cor) => { linhaStatus.textContent = msg; linhaStatus.style.color = cor || '#F4F8F3'; };
+    const status = (msg, cor) => { linhaStatus.textContent = msg; linhaStatus.style.color = cor || '#F2F1F6'; };
     // pergunta no próprio painel (sem alert/confirm, que travam a página)
     const perguntar = (sim, nao) => new Promise((resolve) => {
       const caixa = el('div', { display: 'flex', gap: '8px', marginTop: '10px' });
@@ -75,10 +81,10 @@
         b.onclick = () => { caixa.remove(); resolve(valor); };
         return b;
       };
-      caixa.append(botao(sim, '#3CFF00', '#042705', true), botao(nao, 'rgba(255,255,255,.12)', '#F4F8F3', false));
+      caixa.append(botao(sim, '#B7AAFF', '#1C1B33', true), botao(nao, 'rgba(255,255,255,.12)', '#F2F1F6', false));
       painel.appendChild(caixa);
     });
-    const progresso = (feito, total) => { barra.style.width = (total ? Math.round((100 * feito) / total) : 0) + '%'; };
+    const progresso = (feito, total) => { barra.style.transform = `scaleX(${total ? feito / total : 0})`; };
 
     // ------------------------------------------------------------------
     // Dados (gzip + base64, gerados pela UI)
@@ -139,7 +145,7 @@
         if (meta && meta.content) { window.__thCsrf = meta.content; window.__thCsrfEm = desde; return; }
       }
       if (!motivo && window.__thCsrf) return;
-      status('👉 Clique na seta ‹ › do mês (ou em "Ano") no calendário', '#E6FF0A');
+      status('👉 Clique na seta ‹ › do mês (ou em "Ano") no calendário', '#FFD27A');
       detalhe.textContent = (motivo ? motivo + '\n' : '') + 'O script precisa que o app faça uma chamada para pegar o token da sua sessão.';
       console.log('⏳ ' + (motivo || '') + ' Clique na seta ‹ › do mês (ou em "Ano") no calendário.');
       for (let i = 0; i < 600; i++) {               // até 5 min
@@ -177,7 +183,7 @@
       return (r.headers.get('content-type') || '').includes('json') ? r.json() : r.text();
     }
 
-    async function lerConta() {
+    async function lerConta(anosExtra) {
       const lista = await api('GET', '/workout-service/workouts?start=0&limit=999&myWorkoutsOnly=true');
       const porNome = new Map();
       (Array.isArray(lista) ? lista : []).forEach((w) => {
@@ -186,6 +192,7 @@
       });
       const anos = new Set([Number(hoje.slice(0, 4))]);
       ITENS.forEach((it) => it.data && anos.add(Number(it.data.slice(0, 4))));
+      (anosExtra || []).forEach((a) => anos.add(a));
       const agenda = new Map(); const vistos = new Set();
       for (const ano of [...anos].sort()) {
         for (let mes = 0; mes < 12; mes++) {          // 0-based na API
@@ -305,13 +312,182 @@
     }
 
     // ------------------------------------------------------------------
+    // Apagar do Garmin os selecionados (treino + datas), pelo nome
+    // ------------------------------------------------------------------
+    async function apagar(conta) {
+      const alvo = [], conflitos = [];
+      for (const it of ITENS) {
+        const nomes = [...new Set([it.nome, ...(it.antigos || [])])];
+        const ids = nomes.flatMap((n) => conta.porNome.get(n) || []);
+        if (!ids.length) continue;
+        if (!it.editado) {
+          // mesma regra do envio: mesmo nome, outro conteúdo e você não editou → provavelmente é de outro plano
+          let igual = null;
+          try { igual = assinatura(await api('GET', `/workout-service/workout/${ids[0]}`)) === assinatura(it.payload); }
+          catch (e) { if (e.sessao) throw e; }
+          if (igual === false) { conflitos.push(it.nome); continue; }
+        }
+        alvo.push({ it, ids, datas: nomes.flatMap((n) => conta.agenda.get(n) || []) });
+      }
+      const nDatas = alvo.reduce((s, a) => s + a.datas.length, 0);
+      const fora = ITENS.length - alvo.length - conflitos.length;
+      const nc = conflitos.length, um = nc === 1;
+      const notas = (nc ? `\n⚠️ ${nc} ${um ? 'tem' : 'têm'} o mesmo nome de um treino com outro conteúdo no Garmin (outro plano?) — fica${um ? '' : 'm'} de fora.` : '') +
+        (fora ? `\n${fora} ${fora === 1 ? 'não está' : 'não estão'} no Garmin.` : '');
+      console.table(alvo.map((a) => ({ nome: a.it.nome, treinos: a.ids.length, datas: a.datas.map((d) => br(d.data)).join(', ') || '—' })));
+      if (conflitos.length) console.warn('⚠️ Não apaguei (mesmo nome, outro conteúdo):', conflitos);
+
+      if (!alvo.length) {
+        status('Nada para apagar.', '#7EE2A8'); progresso(1, 1);
+        detalhe.textContent = ('Nenhum dos selecionados está no Garmin.' + notas).trim();
+        return { apagados: 0, conflitos: conflitos.length };
+      }
+      if (OPC.simular) {
+        status('Simulação pronta — nada foi apagado.', '#7EE2A8'); progresso(1, 1);
+        detalhe.textContent = `${alvo.length} treino(s) a apagar, com ${nDatas} data(s) no calendário.` + notas + '\nDetalhes na tabela do Console.';
+        return { simulacao: true, apagaria: alvo.length };
+      }
+      status(`Apagar ${alvo.length} treino(s) do Garmin?`, '#FFD27A');
+      detalhe.textContent = `Saem de "Meus treinos" e do calendário (${nDatas} data(s)). Para voltar, envie de novo.` + notas;
+      if (!(await perguntar('Apagar', 'Cancelar'))) { status('Cancelado — nada foi apagado.', '#FFD27A'); return { cancelado: true }; }
+
+      let n = 0, feitos = 0, erros = 0;
+      for (const a of alvo) {
+        status(`${++n}/${alvo.length} · ${a.it.nome}`); progresso(n - 1, alvo.length);
+        for (const id of a.ids) {
+          try { await api('DELETE', `/workout-service/workout/${id}`); feitos++; console.log(`🗑️ ${a.it.nome} (id ${id})`); }
+          catch (e) { if (e.sessao) throw e; erros++; console.error(`❌ ${a.it.nome}: ${e.message}`); }
+          await dorme(PAUSA_MS);
+        }
+      }
+      esquecerRetomada();
+      progresso(1, 1);
+      status('Conferindo no Garmin…');
+      const depois = await lerConta();
+      const vivos = new Set([...depois.porNome.values()].flat());
+      const sobrou = alvo.filter((a) => a.ids.some((id) => vivos.has(id))).length;
+      const ok = !erros && !sobrou;
+      status(ok ? '✅ Apagados. Recarregue a página (F5) para ver.' : '⚠️ Terminou com pendências — veja o Console.', ok ? '#7EE2A8' : '#FFD27A');
+      detalhe.textContent = `apagados ${feitos} · erros ${erros}` + (sobrou ? `\nainda no Garmin ${sobrou}` : '') + notas;
+      return { apagados: feitos, erros, sobrou };
+    }
+
+    // o que um envio guardou para retomar fala de treinos/datas que não existem mais
+    function esquecerRetomada() {
+      try { Object.keys(localStorage).filter((k) => k.startsWith('__thEnvio_')).forEach((k) => localStorage.removeItem(k)); } catch (e) { /* ok */ }
+    }
+
+    // ------------------------------------------------------------------
+    // Limpar o calendário: tira TODAS as datas de treino (ano passado até o
+    // ano que vem). Os treinos continuam em "Meus treinos".
+    // ------------------------------------------------------------------
+    async function limparCalendario() {
+      const ano = Number(hoje.slice(0, 4)), anos = [ano - 1, ano, ano + 1];
+      const lista = (conta) => [...conta.agenda].flatMap(([nome, ds]) => ds.map((d) => ({ nome, ...d })));
+      const datas = lista(await lerConta(anos)).sort((a, b) => a.data.localeCompare(b.data));
+      console.table(datas.map((d) => ({ data: d.data, nome: d.nome })));
+      if (!datas.length) {
+        status('O calendário já está sem treinos.', '#7EE2A8'); progresso(1, 1);
+        detalhe.textContent = `Nenhum treino agendado de ${ano - 1} a ${ano + 1}.`;
+        return { tirados: 0 };
+      }
+      const passadas = datas.filter((d) => d.data < hoje).length;
+      const resumo = `${datas.length} data(s) de treino, de ${br(datas[0].data)}/${datas[0].data.slice(0, 4)} a ${br(datas[datas.length - 1].data)}/${datas[datas.length - 1].data.slice(0, 4)}` +
+        (passadas ? ` (${passadas} já passaram)` : '') + '.\nOs treinos continuam em "Meus treinos" — só saem das datas.';
+      if (OPC.simular) {
+        status('Simulação pronta — nada foi tirado.', '#7EE2A8'); progresso(1, 1);
+        detalhe.textContent = resumo + '\nDetalhes na tabela do Console.';
+        return { simulacao: true, tiraria: datas.length };
+      }
+      status(`Tirar ${datas.length} treino(s) do calendário?`, '#FFD27A');
+      detalhe.textContent = resumo;
+      if (!(await perguntar('Tirar do calendário', 'Cancelar'))) { status('Cancelado — nada foi tirado.', '#FFD27A'); return { cancelado: true }; }
+      // a lista fica guardada para reagendar à mão, se precisar
+      try { localStorage.setItem('__bodyplusCalendarioTirado', JSON.stringify(datas)); } catch (e) { /* ok */ }
+      let n = 0, feitos = 0, erros = 0;
+      for (const d of datas) {
+        status(`${++n}/${datas.length} · ${br(d.data)} ${d.nome}`); progresso(n - 1, datas.length);
+        try { await api('DELETE', `/workout-service/schedule/${d.id}`); feitos++; }
+        catch (e) { if (e.sessao) throw e; erros++; console.error(`❌ ${d.data} ${d.nome}: ${e.message}`); }
+        await dorme(PAUSA_MS);
+      }
+      esquecerRetomada();
+      progresso(1, 1);
+      status('Conferindo no Garmin…');
+      const sobrou = lista(await lerConta(anos)).length;
+      const ok = !erros && !sobrou;
+      status(ok ? '✅ Calendário limpo. Recarregue a página (F5) para ver.' : '⚠️ Terminou com pendências — veja o Console.', ok ? '#7EE2A8' : '#FFD27A');
+      detalhe.textContent = `tirados ${feitos} · erros ${erros}` + (sobrou ? `\nainda no calendário ${sobrou}` : '') +
+        '\nA lista do que saiu ficou no Console (e em localStorage.__bodyplusCalendarioTirado).';
+      return { tirados: feitos, erros, sobrou };
+    }
+
+    // ------------------------------------------------------------------
+    // Limpar "Meus treinos": apaga TODOS os treinos da biblioteca (e, com eles,
+    // as datas). Antes, baixa uma cópia de cada um em .json.
+    // ------------------------------------------------------------------
+    async function limparBiblioteca() {
+      const ano = Number(hoje.slice(0, 4));
+      const conta = await lerConta([ano - 1, ano, ano + 1]);
+      const treinos = [...conta.porNome].flatMap(([nome, ids]) => ids.map((id) => ({ id, nome }))).sort((a, b) => a.nome.localeCompare(b.nome));
+      const nDatas = [...conta.agenda].filter(([nome]) => conta.porNome.has(nome)).reduce((s, [, ds]) => s + ds.length, 0);
+      console.table(treinos);
+      if (!treinos.length) {
+        status('"Meus treinos" já está vazio.', '#7EE2A8'); progresso(1, 1);
+        return { apagados: 0 };
+      }
+      const resumo = `${treinos.length} treino(s) em "Meus treinos" — todos, inclusive os que não vieram do Body+. Saem também do calendário (${nDatas} data(s) de ${ano - 1} a ${ano + 1}).`;
+      if (OPC.simular) {
+        status('Simulação pronta — nada foi apagado.', '#7EE2A8'); progresso(1, 1);
+        detalhe.textContent = resumo + '\nDetalhes na tabela do Console.';
+        return { simulacao: true, apagaria: treinos.length };
+      }
+      status(`Apagar os ${treinos.length} treino(s) de "Meus treinos"?`, '#FFD27A');
+      detalhe.textContent = resumo + '\nAntes de apagar, baixo uma cópia de todos (.json). Daqui não dá para desfazer; os do Body+ voltam se você enviar de novo.';
+      if (!(await perguntar('Apagar todos', 'Cancelar'))) { status('Cancelado — nada foi apagado.', '#FFD27A'); return { cancelado: true }; }
+
+      // cópia ANTES de apagar qualquer coisa: se uma leitura falhar, para aqui sem apagar nada
+      const copia = [];
+      for (const [i, t] of treinos.entries()) {
+        status(`Guardando uma cópia… ${i + 1}/${treinos.length}`); progresso(i, treinos.length);
+        copia.push(await api('GET', `/workout-service/workout/${t.id}`));
+        await dorme(60);
+      }
+      const arquivo = `garmin-meus-treinos-${hoje}.json`;
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(new Blob([JSON.stringify(copia, null, 1)], { type: 'application/json' }));
+      link.download = arquivo;
+      document.body.appendChild(link); link.click(); link.remove();
+      setTimeout(() => URL.revokeObjectURL(link.href), 60000);
+
+      let n = 0, feitos = 0, erros = 0;
+      for (const t of treinos) {
+        status(`${++n}/${treinos.length} · ${t.nome}`); progresso(n - 1, treinos.length);
+        try { await api('DELETE', `/workout-service/workout/${t.id}`); feitos++; }
+        catch (e) { if (e.sessao) throw e; erros++; console.error(`❌ ${t.nome}: ${e.message}`); }
+        await dorme(PAUSA_MS);
+      }
+      esquecerRetomada();
+      progresso(1, 1);
+      status('Conferindo no Garmin…');
+      const sobrou = (await lerConta()).porNome.size;
+      const ok = !erros && !sobrou;
+      status(ok ? '✅ "Meus treinos" limpo. Recarregue a página (F5) para ver.' : '⚠️ Terminou com pendências — veja o Console.', ok ? '#7EE2A8' : '#FFD27A');
+      detalhe.textContent = `apagados ${feitos} · erros ${erros}` + (sobrou ? `\nainda em "Meus treinos" ${sobrou}` : '') + `\nCópia baixada: ${arquivo}`;
+      return { apagados: feitos, erros, sobrou };
+    }
+
+    // ------------------------------------------------------------------
     // Execução
     // ------------------------------------------------------------------
     const res = { criados: 0, substituidos: 0, reaproveitados: 0, agendados: 0, desagendados: 0, retomados: 0, conflitos: 0, erros: 0 };
-    const AVISO_CONFLITO = 'têm o mesmo nome de treinos que já estão no seu Garmin, mas com outro conteúdo (outro plano?). Não mexi neles. Para enviar o plano novo sem misturar, use um prefixo nos nomes (campo "Prefixo" na página) — ou marque "Substituir".';
+    const AVISO_CONFLITO = 'têm o mesmo nome de treinos que já estão no seu Garmin, mas com outro conteúdo (outro plano?). Não mexi neles. Para enviar o plano novo sem misturar, use um prefixo nos nomes (campo "Prefixo" ao importar) — ou marque "Substituir".';
     try {
       status('Lendo seus treinos e o calendário no Garmin…');
+      if (OPC.acao === 'limpar-calendario') return await limparCalendario();
+      if (OPC.acao === 'limpar-biblioteca') return await limparBiblioteca();
       const conta = await lerConta();
+      if (OPC.acao === 'apagar') return await apagar(conta);
       status('Comparando com o que você selecionou…');
       const plano = await planejar(conta);
       const nTreinos = conta.porNome.size;
@@ -323,26 +499,26 @@
 
       if (OPC.simular) {
         const c = (f) => plano.filter(f).length;
-        status(conflitos.length ? `Simulação pronta — ${conflitos.length} conflito(s) de nome` : 'Simulação pronta — nada foi gravado.', conflitos.length ? '#E6FF0A' : '#3CFF00');
+        status(conflitos.length ? `Simulação pronta — ${conflitos.length} conflito(s) de nome` : 'Simulação pronta — nada foi gravado.', conflitos.length ? '#FFD27A' : '#7EE2A8');
         progresso(1, 1);
         detalhe.textContent =
           (conflitos.length ? `⚠️ ${conflitos.length} ${AVISO_CONFLITO}\n\n` : '') +
           `${c((p) => p.criar && !p.apagar.length)} a criar · ${c((p) => p.apagar.length > 0)} a substituir · ${c((p) => !p.criar && !p.conflito)} já existem\n` +
           `${plano.reduce((s, p) => s + p.agendar.length, 0)} datas a agendar · ${plano.reduce((s, p) => s + p.desagendar.length, 0)} a remover\n` +
-          'Detalhes na tabela do Console. Para gravar, gere o script sem "Só simular".';
+          'Detalhes na tabela do Console. Para gravar, envie de novo sem "Só simular".';
         return { simulacao: true, plano: plano.map((p) => ({ data: p.it.data, nome: p.it.nome, treino: p.treino, calendario: p.cal })) };
       }
 
       if (conflitos.length && conflitos.length < plano.length - feitos.size) {
         // antes de gravar qualquer coisa: pode ser um plano novo com os mesmos nomes do antigo
-        status(`⚠️ ${conflitos.length} conflito(s) de nome — nada foi gravado ainda`, '#E6FF0A');
+        status(`⚠️ ${conflitos.length} conflito(s) de nome — nada foi gravado ainda`, '#FFD27A');
         detalhe.textContent = `${conflitos.length} ${AVISO_CONFLITO}\n\nContinuar envia só os outros ${plano.length - conflitos.length}.`;
         if (!(await perguntar('Continuar sem eles', 'Cancelar'))) {
-          status('Cancelado — nada foi gravado.', '#E6FF0A');
+          status('Cancelado — nada foi gravado.', '#FFD27A');
           return { cancelado: true, conflitos: conflitos.length };
         }
       } else if (conflitos.length) {
-        status(`⚠️ Todos os ${conflitos.length} treinos têm conflito de nome — nada a fazer`, '#E6FF0A');
+        status(`⚠️ Todos os ${conflitos.length} treinos têm conflito de nome — nada a fazer`, '#FFD27A');
         detalhe.textContent = `${conflitos.length} ${AVISO_CONFLITO}`;
         return { conflitos: conflitos.length };
       }
@@ -394,21 +570,21 @@
 
       const ok = !res.erros && !faltando.length && !duplicados.length && !semData.length && !res.conflitos;
       if (!res.erros) { try { localStorage.removeItem(CHAVE_CK); } catch (e) { /* ok */ } }
-      status(ok ? '✅ Pronto! Confira o calendário.' : '⚠️ Terminou com pendências — veja o Console.', ok ? '#3CFF00' : '#E6FF0A');
+      status(ok ? '✅ Pronto! Recarregue a página (F5) para ver no calendário.' : '⚠️ Terminou com pendências — veja o Console.', ok ? '#7EE2A8' : '#FFD27A');
       detalhe.textContent =
         (res.conflitos ? `⚠️ ${res.conflitos} ${AVISO_CONFLITO}\n\n` : '') +
         `criados ${res.criados} · substituídos ${res.substituidos} · já existiam ${res.reaproveitados}\n` +
         `agendados ${res.agendados} · removidos ${res.desagendados} · erros ${res.erros}` +
         (faltando.length ? `\nfaltando ${faltando.length}` : '') + (duplicados.length ? `\nduplicados ${duplicados.length}` : '') +
         (semData.length ? `\nsem data ${semData.length}` : '') +
-        (res.erros ? '\nCole o script de novo para tentar só o que falhou.' : '');
+        (res.erros ? '\nEnvie de novo para tentar só o que falhou.' : '');
       console.log('===== resultado', res);
       return res;
     } catch (e) {
       status(e.sessao ? 'Sessão expirou — recarregue a página (F5)' : 'Parei: ' + e.message, '#FF8A80');
       detalhe.textContent = e.sessao
-        ? 'Entre na conta se pedir, abra o calendário e cole o script de novo: ele continua de onde parou.'
-        : 'Cole o script de novo para continuar de onde parou.';
+        ? 'Entre na conta se pedir e envie de novo: continua de onde parou.'
+        : 'Envie de novo para continuar de onde parou.';
       console.error('❌', e.message);
       return res;
     }
@@ -431,20 +607,32 @@
     return v.toString(36);
   }
 
-  const ROTULO_AGENDA = { manter: 'manter as datas que já estão no Garmin', mover: 'colocar na data do plano', nao: 'não mexer no calendário' };
+  const ROTULO_AGENDA = { manter: 'manter as datas que já estão no Garmin', mover: 'colocar na data da página', nao: 'não mexer no calendário' };
 
   /**
    * @param itens  [{k, nome, antigos:[], data, editado, payload}]
-   * @param opc    {agendar:'manter'|'mover'|'nao', existente:'pular'|'substituir', simular:bool}
+   * @param opc    {acao:'enviar'|'apagar', agendar:'manter'|'mover'|'nao', existente:'pular'|'substituir', simular:bool}
    */
   async function gerarScript(itens, opc) {
     const b64 = await gzipBase64(JSON.stringify(itens));
-    const opcoes = { agendar: opc.agendar, existente: opc.existente, simular: !!opc.simular, total: itens.length, id: hash(b64 + opc.agendar + opc.existente) };
+    const acao = ['apagar', 'limpar-calendario', 'limpar-biblioteca'].includes(opc.acao) ? opc.acao : 'enviar';
+    const opcoes = { acao, agendar: opc.agendar, existente: opc.existente, simular: !!opc.simular, total: itens.length, id: hash(b64 + acao + opc.agendar + opc.existente) };
     const agora = new Date();
     const lista = itens.map((it) => `//   ${it.data || '(sem data)'}  ${it.nome}${it.editado ? '  [editado]' : ''}`).join('\n');
+    const titulo = acao === 'limpar-calendario' ? 'LIMPAR o calendário do Garmin'
+      : acao === 'limpar-biblioteca' ? 'LIMPAR "Meus treinos" do Garmin (apaga TODOS)'
+      : `${acao === 'apagar' ? 'APAGAR do Garmin' : 'envio ao Garmin'} · ${itens.length} treino(s)`;
+    const regras = acao === 'limpar-biblioteca'
+      ? ['// Apaga TODOS os treinos de "Meus treinos" (e as datas deles), inclusive os que não vieram do Body+.', '// Baixa uma cópia (.json) antes de apagar. Pede confirmação no painel.']
+      : acao === 'limpar-calendario'
+      ? ['// Tira do calendário TODAS as datas de treino (do ano passado ao ano que vem).', '// Os treinos continuam em "Meus treinos". Pede confirmação no painel.']
+      : acao === 'apagar'
+      ? ['// Apaga do Garmin (treino e datas) os treinos abaixo, pelo nome. Pede confirmação no painel.']
+      : [`// Calendário: ${ROTULO_AGENDA[opcoes.agendar]}`,
+        `// Treino que já existe no Garmin: ${opcoes.existente === 'substituir' ? 'substituir' : 'pular'} (editados são sempre substituídos)`];
     const cabecalho = [
       '// =====================================================================',
-      `// TIME HÍBRIDO → GARMIN · ${itens.length} treino(s)${opcoes.simular ? ' · SÓ SIMULAÇÃO (não grava nada)' : ''}`,
+      `// BODY+ · ${titulo}${opcoes.simular ? ' · SÓ SIMULAÇÃO (não grava nada)' : ''}`,
       `// Gerado em ${agora.toLocaleString('pt-BR')} pela UI do projeto.`,
       '//',
       '// COMO USAR',
@@ -453,15 +641,14 @@
       '//      (Se o navegador bloquear a colagem, digite  allow pasting  e Enter.)',
       '//   3. Clique na seta ‹ › do mês (ou em "Ano") quando o painel pedir.',
       '//',
-      `// Calendário: ${ROTULO_AGENDA[opcoes.agendar]}`,
-      `// Treino que já existe no Garmin: ${opcoes.existente === 'substituir' ? 'substituir' : 'pular'} (editados são sempre substituídos)`,
+      ...regras,
       '// Pode colar de novo com segurança: o que já foi feito é pulado.',
       '//',
       lista,
       '// =====================================================================',
     ].join('\n');
     const codigo = `${cabecalho}\n(${thEnviar.toString()})(\n  ${JSON.stringify(b64)},\n  ${JSON.stringify(opcoes)}\n);\n`;
-    return { codigo, bytes: codigo.length, opcoes };
+    return { codigo, bytes: codigo.length, opcoes, b64 };
   }
 
   const API = { thEnviar, gerarScript, gzipBase64, hash };

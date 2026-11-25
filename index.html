@@ -3,74 +3,52 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Time Híbrido → Garmin</title>
-  <meta name="description" content="Veja e edite os treinos da planilha do Time Híbrido e envie para o Garmin Connect por um script colado na aba do navegador.">
-  <link rel="icon" href="assets/logo_time_hibrido.png">
+  <title>Body+</title>
+  <meta name="description" content="Seus treinos de corrida, musculação e outras modalidades, cada um na sua data, enviados para o Garmin Connect por um script colado na aba do navegador.">
+  <link rel="icon" href="assets/icone.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#1C1B33">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Anybody:wdth,wght@50..150,500..900&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="web/style.css">
 </head>
 <body>
   <header class="topo">
-    <div class="marca">
-      <img src="assets/logo_time_hibrido.png" alt="Time Híbrido" class="logo">
-      <h1>Treinos <span class="neon">→ Garmin</span></h1>
-    </div>
-    <div class="fonte" id="fonte" aria-live="polite"></div>
+    <h1 class="marca">Body<svg class="mais" viewBox="0 0 40 40" aria-hidden="true"><path d="M14 0h12v14h14v12H26v14H14V26H0V14h14z"/></svg><span class="sr">+</span></h1>
+    <p class="fonte" id="fonte" aria-live="polite"></p>
     <div class="acoes-topo">
-      <button class="btn btn-apoio" id="btn-apoiar" aria-haspopup="dialog"><span aria-hidden="true">♥</span> Apoiar o projeto</button>
-      <label class="btn btn-claro" title="Abrir o PDF do Time Híbrido ou uma planilha .xlsx">
-        <input type="file" id="arquivo" accept=".pdf,.xlsx,.xlsm" hidden>Abrir PDF ou planilha
-      </label>
-      <button class="btn btn-claro" id="btn-baixar" title="Baixar a planilha com as suas edições">Baixar planilha</button>
+      <button class="btn btn-primario" data-novo-em="">+ Novo treino</button>
+      <button class="btn btn-claro" data-importar title="PDF do Time Híbrido ou planilha .xlsx">Importar</button>
+      <input type="file" id="arquivo" accept=".pdf,.xlsx,.xlsm" hidden>
+      <button class="btn btn-claro" id="btn-baixar" title="Baixar tudo em .xlsx (para guardar ou editar no Excel)">Baixar planilha</button>
       <details class="menu">
         <summary class="btn btn-claro" aria-label="Mais opções">⋯</summary>
         <div class="menu-itens">
-          <button id="btn-recarregar">Recarregar planilha do projeto</button>
+          <button id="btn-recarregar">Recarregar data/treinos.xlsx</button>
           <button id="btn-descartar">Descartar todas as edições</button>
+          <button id="btn-zerar">Começar do zero</button>
+          <button id="btn-apoiar" aria-haspopup="dialog">Apoiar o projeto (Pix)</button>
         </div>
       </details>
     </div>
   </header>
 
-  <section class="config" id="config" hidden>
-    <label class="campo">
-      <span>Semana 1 começa na segunda</span>
-      <input type="date" id="cfg-inicio">
-      <small id="cfg-inicio-aviso" class="aviso-txt"></small>
-    </label>
-    <div class="campo">
-      <span>Dia de cada treino de musculação</span>
-      <div class="dias-musc" id="cfg-dias"></div>
+  <section class="filtros" aria-label="Filtros">
+    <div class="segmentado" id="filtro">
+      <button data-f="tudo" class="ativo">Tudo</button>
+      <button data-f="cardio">Cardio</button>
+      <button data-f="musculacao">Musculação</button>
     </div>
-    <label class="campo">
-      <span>Prefixo nos nomes <small>(opcional)</small></span>
-      <input type="text" id="cfg-prefixo" maxlength="12" placeholder="ex.: 3K" class="input-curto" autocomplete="off">
-    </label>
-    <div class="campo">
-      <span>Mostrar</span>
-      <div class="segmentado" id="filtro" role="tablist">
-        <button data-f="tudo" class="ativo">Tudo</button>
-        <button data-f="corrida">Corrida</button>
-        <button data-f="musculacao">Musculação</button>
-      </div>
-    </div>
-    <label class="campo campo-check">
-      <input type="checkbox" id="cfg-passadas">
+    <label class="campo-check">
+      <input type="checkbox" id="cfg-passadas" checked>
       <span>Esconder semanas que já passaram</span>
     </label>
   </section>
 
   <main class="layout">
-    <div class="principal">
-      <div class="relatorio" id="relatorio" hidden></div>
-      <section class="semanas" id="semanas" aria-label="Semanas do plano">
-        <div class="vazio" id="vazio">
-          <p class="vazio-titulo">Carregando a planilha…</p>
-        </div>
-      </section>
-    </div>
+    <section class="semanas" id="semanas" aria-label="Treinos por semana">
+      <div class="vazio"><p class="vazio-titulo">Carregando…</p></div>
+    </section>
 
     <aside class="envio" id="envio" hidden>
       <h2>Enviar ao Garmin</h2>
@@ -78,36 +56,47 @@
       <div class="presets">
         <button data-p="futuro">De hoje em diante</button>
         <button data-p="todos">Todos</button>
-        <button data-p="editados">Editados</button>
+        <button data-p="editados">Novos e editados</button>
         <button data-p="nenhum">Nenhum</button>
       </div>
 
       <fieldset>
         <legend>Calendário</legend>
-        <label><input type="radio" name="agendar" value="manter" checked> Manter as datas que já estão no Garmin <small>agenda só o que ainda não está no calendário</small></label>
-        <label><input type="radio" name="agendar" value="mover"> Colocar na data do plano <small>move os selecionados para a data mostrada aqui</small></label>
+        <label><input type="radio" name="agendar" value="mover" checked> Colocar na data daqui <small>agenda (ou move) os selecionados para a data mostrada nesta página</small></label>
+        <label><input type="radio" name="agendar" value="manter"> Manter as datas que já estão no Garmin <small>agenda só o que ainda não está no calendário</small></label>
         <label><input type="radio" name="agendar" value="nao"> Não mexer no calendário <small>só cria/atualiza em "Meus treinos"</small></label>
       </fieldset>
       <fieldset>
         <legend>Se o treino já existe no Garmin</legend>
         <label><input type="radio" name="existente" value="pular" checked> Pular</label>
-        <label><input type="radio" name="existente" value="substituir"> Substituir pelo da planilha</label>
-        <small class="nota">Treinos editados aqui são substituídos quando estão diferentes no Garmin.</small>
+        <label><input type="radio" name="existente" value="substituir"> Substituir pelo daqui</label>
+        <small class="nota">Treinos novos e editados aqui são substituídos quando estão diferentes no Garmin.</small>
       </fieldset>
       <label class="check-simular"><input type="checkbox" id="simular"> Só simular <small>mostra o que faria, sem gravar nada</small></label>
 
-      <button class="btn btn-neon" id="btn-gerar">Gerar script</button>
+      <button class="btn btn-primario btn-cheio" id="btn-gerar">Gerar script</button>
+      <button class="btn btn-claro btn-cheio" id="btn-apagar" title="Tira do Garmin os treinos selecionados (de Meus treinos e do calendário)">Apagar do Garmin</button>
+      <p class="nota" id="dica-extensao">Com a extensão do Body+ (pasta <code>extensao/</code> do projeto), o envio vira um clique, sem colar script.</p>
       <p class="avisos-envio" id="avisos-envio"></p>
+
+      <fieldset class="limpar">
+        <legend>Limpar o Garmin inteiro</legend>
+        <small id="limpar-nota">tudo, não só os selecionados · pede confirmação</small>
+        <div class="limpar-botoes">
+          <button class="btn btn-claro" id="btn-limpar" title="Tira todos os treinos das datas do calendário (do ano passado ao ano que vem). Eles continuam em Meus treinos.">Calendário</button>
+          <button class="btn btn-claro" id="btn-limpar-biblioteca" title="Apaga todos os treinos de Meus treinos (e as datas deles), inclusive os que não vieram do Body+. Baixa uma cópia antes.">Meus treinos</button>
+        </div>
+      </fieldset>
 
       <div class="script" id="script" hidden>
         <div class="script-acoes">
-          <button class="btn btn-neon" id="btn-copiar">Copiar script</button>
-          <button class="btn btn-escuro" id="btn-baixar-js">Baixar .js</button>
+          <button class="btn btn-primario" id="btn-copiar">Copiar script</button>
+          <button class="btn btn-claro" id="btn-baixar-js">Baixar .js</button>
         </div>
         <p class="script-info" id="script-info"></p>
         <ol class="passos">
           <li>Abra o <a href="https://connect.garmin.com/app/calendar" target="_blank" rel="noopener">calendário do Garmin Connect</a> já logado.</li>
-          <li><kbd>F12</kbd> → aba <b>Console</b> → cole e aperte <kbd>Enter</kbd>. Se o navegador bloquear a colagem, digite <code>allow pasting</code> e cole de novo.</li>
+          <li><kbd>F12</kbd>, aba <b>Console</b>: cole e aperte <kbd>Enter</kbd>. Se o navegador bloquear a colagem, digite <code>allow pasting</code> e cole de novo.</li>
           <li>Quando o painel no canto pedir, clique na seta <b>‹ ›</b> do mês (ou em <b>Ano</b>). O painel mostra o progresso e confere tudo no fim.</li>
         </ol>
         <p class="nota">Pode colar de novo sem medo: o que já foi feito é pulado.</p>
@@ -129,21 +118,55 @@
     </div>
   </aside>
 
-  <dialog class="doacao" id="doacao" aria-labelledby="doacao-titulo">
-    <form method="dialog" class="doacao-fechar"><button class="btn-x" aria-label="Fechar">×</button></form>
-    <p class="doacao-sub">Pix · qualquer valor</p>
+  <dialog class="dialogo" id="novo" aria-labelledby="novo-titulo">
+    <form method="dialog" id="novo-form">
+      <h2 id="novo-titulo">Novo treino</h2>
+      <fieldset class="modalidades">
+        <legend>Modalidade</legend>
+        <div id="novo-modalidades"></div>
+      </fieldset>
+      <label class="campo"><span>Data</span><input type="date" id="novo-data" required></label>
+      <div class="dialogo-rodape">
+        <button class="btn btn-claro" value="cancelar" formnovalidate>Cancelar</button>
+        <button class="btn btn-primario" value="criar">Criar e editar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="dialogo" id="importar" aria-labelledby="imp-titulo">
+    <p class="dialogo-sub">Importar</p>
+    <h2 id="imp-titulo"></h2>
+    <p class="carregando" id="imp-lendo" hidden></p>
+    <div id="imp-form" hidden>
+      <div id="imp-datas">
+        <p class="dica">O plano vem por semanas: escolha quando ele começa para cada treino ganhar a sua data.</p>
+        <label class="campo"><span>Semana 1 começa na segunda</span><input type="date" id="imp-inicio"><small id="imp-inicio-aviso" class="aviso-txt"></small></label>
+        <div class="campo" id="imp-dias-box"><span>Dia de cada treino de musculação</span><div class="dias-musc" id="imp-dias"></div></div>
+      </div>
+      <label class="campo"><span>Prefixo nos nomes <small>(opcional, separa planos no Garmin)</small></span><input id="imp-prefixo" maxlength="12" placeholder="ex.: 3K" class="input-curto" autocomplete="off"></label>
+      <div id="imp-resumo" class="imp-resumo"></div>
+    </div>
+    <div class="dialogo-rodape">
+      <button class="btn btn-claro" id="imp-cancelar">Cancelar</button>
+      <button class="btn btn-claro" id="imp-substituir" data-imp>Substituir tudo</button>
+      <button class="btn btn-primario" id="imp-adicionar" data-imp>Adicionar aos meus treinos</button>
+    </div>
+  </dialog>
+
+  <dialog class="dialogo doacao" id="doacao" aria-labelledby="doacao-titulo">
+    <form method="dialog" class="dialogo-fechar"><button class="btn-x" aria-label="Fechar">×</button></form>
     <h2 id="doacao-titulo">Apoie o projeto</h2>
-    <p>Esta ferramenta é gratuita e feita nas horas vagas. Se ela te poupou tempo, uma doação ajuda a mantê-la funcionando — <b>você escolhe o valor</b>.</p>
+    <p>Esta ferramenta é gratuita e feita nas horas vagas. Se ela te poupou tempo, uma doação via Pix ajuda a mantê-la — <b>você escolhe o valor</b>.</p>
     <figure class="pix-qr" id="pix-qr-box">
-      <img id="pix-qr" alt="QR code Pix para doação" width="220" height="220">
-      <figcaption>Abra o app do seu banco → <b>Pix</b> → <b>Ler QR code</b> e digite o valor que quiser.</figcaption>
+      <img id="pix-qr" src="assets/pix-qr.png" alt="QR code Pix para doação" width="200" height="200" loading="lazy">
+      <figcaption>No app do banco: Pix, ler QR code, e digite o valor que quiser.</figcaption>
     </figure>
     <div class="pix-linha">
       <div>
         <span class="pix-rotulo">Chave Pix (celular)</span>
         <b class="pix-valor" id="pix-chave"></b>
       </div>
-      <button class="btn btn-escuro" id="btn-copiar-chave">Copiar chave</button>
+      <button class="btn btn-claro" id="btn-copiar-chave">Copiar chave</button>
     </div>
     <div class="pix-linha" id="pix-cc-box" hidden>
       <div>
@@ -153,11 +176,11 @@
       <button class="btn btn-claro" id="btn-copiar-cc">Copiar código</button>
     </div>
     <p class="nota" id="pix-recebedor" hidden></p>
-    <p class="doacao-obrigado">Obrigado! ♥</p>
   </dialog>
 
   <datalist id="dl-exercicios"></datalist>
   <datalist id="dl-tecnicas"></datalist>
+  <datalist id="dl-grupos"></datalist>
   <datalist id="dl-catalogo"></datalist>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -165,7 +188,7 @@
   <script src="web/builder.js"></script>
   <script src="web/depara.js"></script>
   <script src="web/pdf-plano.js"></script>
-  <script src="web/uploader.js"></script>
+  <script src="extensao/uploader.js"></script>
   <script src="web/app.js"></script>
 </body>
 </html>

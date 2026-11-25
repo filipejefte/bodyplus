@@ -1,5 +1,4 @@
 # Segredos — sessão do Garmin copiada do navegador (cookies/JWT/CSRF). NUNCA commitar.
-garmin-curl.txt
 garmin-curl*.txt
 *.curl.txt
 csrf.txt
@@ -8,14 +7,15 @@ csrf.txt
 # Configuração local do Claude
 .claude/settings.local.json
 
-# Gerados
-__pycache__/
-*.py[cod]
-th_preview.json
+# Scripts de envio baixados pela página (contêm os treinos)
+bodyplus_envio_*.js
 
-# Ambientes
-.venv/
-venv/
+# Extensão empacotada pelo navegador: o .pem é a chave privada dela
+*.pem
+*.crx
+
+# Cópia de "Meus treinos" baixada antes de limpar
+garmin-meus-treinos-*.json
 
 # Editor / SO
 .vscode/
