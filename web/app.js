@@ -14,10 +14,13 @@
   // A marca é a assinatura do uploader.js da extensão; diferente da daqui = extensão não recarregada.
   const MARCA_EXT = document.documentElement.dataset.bodyplusExtensao;
   const COM_EXTENSAO = !!MARCA_EXT;
-  const EXT_EM_DIA = MARCA_EXT === U.hash(U.thEnviar.toString());
+  const EXT_EM_DIA = MARCA_EXT === U.hash(U.thEnviar.toString().split(String.fromCharCode(13)).join(''));   // sem CR: CRLF local × LF no Pages
   const EXT_VELHA = 'A extensão do Body+ está desatualizada: na página de extensões do navegador, clique em recarregar nela, e depois recarregue esta página (Ctrl+F5).';
 
   const PLANILHA_PROJETO = 'data/treinos.xlsx';
+  // A planilha do projeto (os seus treinos) só abre sozinha rodando no seu PC.
+  // No GitHub Pages, quem abre pela primeira vez começa com a página vazia.
+  const LOCAL = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
   const CATALOGO = 'data/garmin_exercises.json';
   const CHAVE_LS = 'bodyplus:v1';
   const CHAVE_LS_ANTIGA = 'th-garmin-ui:v1';   // versão Time Híbrido → migrada na primeira abertura
@@ -1040,6 +1043,7 @@
 
     // menu
     $('#btn-baixar').addEventListener('click', () => { $('.menu').open = false; baixarPlanilha(); });
+    $('#btn-recarregar').hidden = !LOCAL;
     $('#btn-recarregar').addEventListener('click', async () => {
       $('.menu').open = false;
       if (D.treinos.length && !confirm('Recarregar data/treinos.xlsx tira da página o que está aqui agora (inclusive edições). Continuar?')) return;
@@ -1183,6 +1187,7 @@
     ligarEventos();
     const salvo = carregarSalvo();
     if (salvo) { iniciar(salvo); return; }
+    if (!LOCAL) { iniciar(estadoVazio()); return; }
     try { iniciar(await carregarDoProjeto()); }
     catch (e) { iniciar(estadoVazio()); }
   }

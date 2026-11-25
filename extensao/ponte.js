@@ -2,7 +2,8 @@
 // A página avisa com window.postMessage; só esta origem (manifest) chega aqui.
 // A marca é a assinatura do código de envio desta extensão: se a página tiver
 // outro uploader.js (extensão não recarregada), ela percebe e não envia.
-document.documentElement.dataset.bodyplusExtensao = THUploader.hash(THUploader.thEnviar.toString());
+// (sem CR: no Windows o arquivo local tem CRLF; o GitHub Pages serve LF)
+document.documentElement.dataset.bodyplusExtensao = THUploader.hash(THUploader.thEnviar.toString().split(String.fromCharCode(13)).join(''));
 
 window.addEventListener('message', async (e) => {
   if (e.source !== window || e.origin !== location.origin || !e.data || e.data.tipo !== 'bodyplus:enviar') return;

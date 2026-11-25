@@ -16,9 +16,15 @@ py -m http.server 8000
 e abra http://localhost:8000. (Aberta direto do disco, a página funciona, mas
 não lê `data/treinos.xlsx` nem o catálogo de exercícios do Garmin.)
 
-Na primeira abertura ela carrega `data/treinos.xlsx`. Se você já usava a versão
-Time Híbrido neste navegador, as edições guardadas são migradas sozinhas
-(as datas ficam as mesmas).
+Na primeira abertura pelo `localhost` ela carrega `data/treinos.xlsx`. Se você
+já usava a versão Time Híbrido neste navegador, as edições guardadas são
+migradas sozinhas (as datas ficam as mesmas).
+
+Também dá para usar pelo GitHub Pages: https://filipejefte.github.io/bodyplus/.
+Lá a página abre vazia (quem abre não vê os seus treinos) e não oferece
+recarregar `data/treinos.xlsx`. Cada endereço guarda as edições à parte, no
+navegador: para levar os treinos do `localhost` para o Pages, use **Baixar
+planilha** num e **Importar → Substituir tudo** no outro.
 
 ## Usar
 
@@ -179,6 +185,9 @@ data/garmin_exercises.json  catálogo de exercícios do Garmin
   musculação 5, cardio 6, yoga 7, pilates 8, HIIT 9, mobilidade 11,
   caminhada 17, trilha 18. Corrida e musculação foram validadas no Garmin; as
   outras seguem o mesmo formato — confira com *Só simular* e depois no relógio.
-- Num repositório público, `data/treinos.xlsx` fica público junto (e o GitHub
-  Pages de repositório privado exige plano pago) — por isso o jeito padrão é
-  rodar local.
+- O repositório é público, então `data/treinos.xlsx` também é (qualquer um
+  pode baixar o arquivo). O Pages só não o abre sozinho.
+- O envio usa a sessão de quem está logado no navegador: outras pessoas podem
+  usar com a conta Garmin delas. É um caminho não oficial (a mesma comunicação
+  interna do site do Garmin Connect, não uma API pública): pode quebrar se a
+  Garmin mudar algo.
