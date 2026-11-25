@@ -235,6 +235,36 @@ code, kbd { font-size: .88em; color: var(--tinta); background: var(--marca-clara
 .gaveta-topo h2 { margin: 0; font: 800 1.6rem/1.15 var(--titulo); font-stretch: 80%; overflow-wrap: anywhere; }
 .gaveta-corpo { flex: 1; overflow: auto; padding: 18px 22px 28px; }
 
+/* ------------------------------------------------------------------ assistente */
+.ia .gaveta-painel { width: min(540px, 100vw); }
+.ia-corpo { display: flex; flex-direction: column; gap: 12px; padding-bottom: 18px; }
+.ia-corpo .dica { margin: 0; }
+.ia-sugestoes { display: flex; flex-wrap: wrap; gap: 6px; }
+.ia-sugestoes .chip { max-width: 100%; white-space: normal; text-align: left; padding: 6px 12px; font-size: .85rem; line-height: 1.35; cursor: pointer; }
+.ia-sugestoes .chip:hover { border-color: var(--marca); color: var(--marca-escura); }
+.ia-msgs { display: flex; flex-direction: column; gap: 10px; }
+.ia-msg { max-width: 92%; padding: 10px 13px; border-radius: 12px; line-height: 1.45; }
+.ia-msg p { margin: 0; white-space: pre-line; }
+.ia-eu { align-self: flex-end; background: var(--marca); color: #fff; border-bottom-right-radius: 4px; }
+.ia-ela { align-self: flex-start; background: var(--papel); border-bottom-left-radius: 4px; }
+.ia-erro { background: #FFF6F5; }
+.ia-acoes { margin-top: 10px; padding: 10px 12px; background: var(--cartao); border: 1px solid var(--linha); border-radius: 8px; }
+.ia-acoes ol { margin: 0 0 10px; padding-left: 20px; }
+.ia-acoes li + li { margin-top: 3px; }
+.ia-acoes .aviso-txt { margin: 0 0 10px; font-size: .88rem; }
+.ia-botoes { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.ia-status { margin: 0; font-size: .88rem; color: var(--tinta-3); }
+.ia-ajuda { margin: 8px 0 0; padding-left: 20px; font-size: .9rem; }
+.ia-erro-conexao { padding: 12px 14px; border-radius: 8px; background: var(--aviso-fundo); color: var(--tinta); }
+.ia-erro-conexao p { margin: 0; }
+.ia-form { display: flex; gap: 8px; align-items: flex-end; padding: 12px 22px; border-top: 1px solid var(--linha); }
+.ia-form textarea { flex: 1; min-height: 44px; max-height: 160px; resize: vertical; padding: 9px 11px; border: 1px solid var(--linha-forte); border-radius: 8px; background: #fff; }
+.ia-form textarea:focus { border-color: var(--marca); outline: 2px solid var(--marca-clara); outline-offset: 0; }
+.ia-config { padding: 0 22px 12px; font-size: .88rem; color: var(--tinta-3); }
+.ia-config summary { cursor: pointer; }
+.ia-config-campos { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end; margin-top: 10px; color: var(--tinta); }
+@media (max-width: 520px) { .ia-config-campos { grid-template-columns: 1fr; } }
+
 .form-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 14px 16px; margin-bottom: 14px; }
 .campo { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 .campo > span { font-weight: 600; font-size: .9rem; }

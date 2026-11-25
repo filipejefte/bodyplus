@@ -53,3 +53,8 @@ const U = require('../extensao/uploader.js');
   assert.deepStrictEqual(JSON.parse(txt), itens);
   assert.strictEqual(r.opcoes.total, itens.length);
 })().catch((e) => { console.error(e); process.exit(1); });
+
+// De-para: todo par aponta para um exercício que existe no catálogo do Garmin
+const DEPARA = require('./depara.js');
+const noCatalogo = new Set(require('../data/garmin_exercises.json').map((e) => e.category + '|' + e.key));
+assert.deepStrictEqual(DEPARA.filter((d) => !noCatalogo.has(d.garmin_category + '|' + d.garmin_exercise)).map((d) => d.exercicio_pt), []);

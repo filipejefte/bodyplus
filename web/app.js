@@ -19,7 +19,7 @@
 
   const PLANILHA_PROJETO = 'data/treinos.xlsx';
   // A planilha do projeto (os seus treinos) só abre sozinha rodando no seu PC.
-  // No GitHub Pages, quem abre pela primeira vez começa com a página vazia.
+  // No GitHub Pages, quem abre pela primeira vez começa com um exemplo (estadoExemplo).
   const LOCAL = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
   const CATALOGO = 'data/garmin_exercises.json';
   const CHAVE_LS = 'bodyplus:v1';
@@ -144,9 +144,30 @@
     const dp = linhas(aba('de-para'));
     if (!car.rows.length && !mus.rows.length) throw new Error('não achei as abas "Cardio" (ou "Corrida") e "Musculação" nessa planilha');
     return {
-      dados: { cardio: car.rows, musculacao: mus.rows, depara: dp.rows },
+      dados: { cardio: car.rows, musculacao: mus.rows, depara: corrigirDepara(dp.rows) },
       colunas: { cardio: car.cols, musculacao: mus.cols, depara: dp.cols },
     };
+  }
+
+  /**
+   * Pares do De-para revistos em 25/11/2026. Quem ainda tem o par antigo (estado guardado
+   * no navegador ou planilha baixada antes) recebe o novo; um par que você mesmo trocou fica.
+   */
+  const PARES_ANTIGOS = {
+    'CADEIRA EXTENSORA': 'BANDED_EXERCISES/LEG_EXTENSION',
+    'PULLDOWN': 'PULL_UP/LAT_PULLDOWN',
+    'REMADA ALTA': 'SHRUG/DUMBBELL_UPRIGHT_ROW',
+  };
+  function corrigirDepara(rows) {
+    const padrao = new Map((window.TH_DEPARA_PADRAO || []).map((d) => [d.exercicio_pt.toUpperCase(), d]));
+    for (const r of rows || []) {
+      const pt = String(r.exercicio_pt || '').trim().toUpperCase();
+      const novo = padrao.get(pt);
+      if (novo && PARES_ANTIGOS[pt] === `${r.garmin_category}/${r.garmin_exercise}`) {
+        ['garmin_category', 'garmin_exercise', 'garmin_label', 'confianca', 'obs'].forEach((c) => (r[c] = novo[c]));
+      }
+    }
+    return rows;
   }
 
   /** PDF do Time Híbrido → as mesmas linhas da planilha (sem datas: entram na importação). */
@@ -180,6 +201,30 @@
   }
   const estadoVazio = () => novoEstado('', { cardio: [], musculacao: [], depara: clone(window.TH_DEPARA_PADRAO || []) });
 
+  /** Quem abre o Body+ pela primeira vez (fora do seu PC): 3 corridas e um ABC simples, a partir de hoje. */
+  function estadoExemplo() {
+    const dia = (n) => B.addDias(hoje, n);
+    const corrida = (n, campos) => ({ _id: novoId(), data: dia(n), esporte: 'corrida', aquecimento_min: 5, desaquecimento_min: 5, ...campos });
+    const cardio = [
+      corrida(0, { tipo: 'contínuo', esforco_min: 30, esforco_zona: 2, notas: 'Leve: dá para conversar correndo.' }),
+      corrida(2, { tipo: 'intervalado', aquecimento_min: 10, reps: 6, esforco_min: 1, esforco_zona: 4, recuperacao_min: 2, recuperacao_zona: 1, notas: 'Tiros fortes; recupere trotando ou andando.' }),
+      corrida(4, { tipo: 'contínuo', esforco_min: 45, esforco_zona: 2, notas: 'Longo e confortável.' }),
+    ];
+    const ABC = [
+      [1, 'A', 'Peito/Ombro/Tríceps', ['SUPINO RETO C/ HALTERES', 'CRUCÍFIXO RETO', 'DESENVOLVIMENTO C/ HALTERES', 'ELEVAÇÃO LATERAL', 'TRÍCEPS CORDA']],
+      [3, 'B', 'Costas/Bíceps', ['PUXADA ALTA', 'REMADA BAIXA', 'REMADA C/ HALTERES', 'BÍCEPS C/ BARRA W', 'BÍCEPS MARTELO C/ HALTERES']],
+      [5, 'C', 'Pernas', ['AGACHAMENTO LIVRE', 'LEG PRESS 45', 'CADEIRA EXTENSORA', 'MESA FLEXORA', 'PANTURRILHA EM PÉ']],
+    ];
+    const musculacao = ABC.flatMap(([n, letra, grupo, exercicios]) => {
+      const sessao = novoId();
+      return exercicios.map((exercicio, i) => ({
+        _id: novoId(), sessao, data: dia(n), nome: `Treino ${letra} · ${grupo}`, grupo,
+        bloco: i + 1, tecnica: '', exercicio, series: 3, reps: '12', descanso_seg: 60,
+      }));
+    });
+    return novoEstado('', { cardio, musculacao, depara: clone(window.TH_DEPARA_PADRAO || []) });
+  }
+
   /** Estado da versão Time Híbrido (semana + dia + âncora global) → datas fixas. */
   function migrarAntigo(v) {
     const c = v.config || {};
@@ -196,10 +241,11 @@
 
   function carregarSalvo() {
     try {
+      const comPares = (e) => { corrigirDepara(e.base.depara); corrigirDepara(e.atual.depara); return e; };
       const s = JSON.parse(localStorage.getItem(CHAVE_LS) || 'null');
-      if (s && s.base && s.atual) return s;
+      if (s && s.base && s.atual) return comPares(s);
       const v = JSON.parse(localStorage.getItem(CHAVE_LS_ANTIGA) || 'null');
-      if (v && v.base && v.atual) return migrarAntigo(v);
+      if (v && v.base && v.atual) return comPares(migrarAntigo(v));
     } catch (e) { console.error(e); }
     return null;
   }
@@ -1187,10 +1233,26 @@
     ligarEventos();
     const salvo = carregarSalvo();
     if (salvo) { iniciar(salvo); return; }
-    if (!LOCAL) { iniciar(estadoVazio()); return; }
+    if (!LOCAL) { iniciar(estadoExemplo()); return; }
     try { iniciar(await carregarDoProjeto()); }
-    catch (e) { iniciar(estadoVazio()); }
+    catch (e) { iniciar(estadoExemplo()); }
   }
+
+  // Ponte para o assistente (web/assistente.js): ler os treinos e aplicar mudanças com desfazer.
+  window.BodyApp = {
+    hoje, novoId, fmtData, NOVO, NOVO_PADRAO,
+    treinos: () => (D.treinos || []),
+    linhas: () => S.atual,
+    exercicios: () => [...new Set((S.atual.depara || []).map((d) => String(d.exercicio_pt || '').trim()).filter(Boolean))],
+    /** Roda `mudar(S.atual)` e devolve uma função que desfaz. */
+    aplicar(mudar) {
+      if (UI.aberto) fechar();
+      const antes = clone(S.atual);
+      mudar(S.atual);
+      aplicouEdicao(false);
+      return () => { S.atual = antes; aplicouEdicao(false); };
+    },
+  };
 
   boot();
 })();

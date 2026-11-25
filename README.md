@@ -21,8 +21,9 @@ já usava a versão Time Híbrido neste navegador, as edições guardadas são
 migradas sozinhas (as datas ficam as mesmas).
 
 Também dá para usar pelo GitHub Pages: https://filipejefte.github.io/bodyplus/.
-Lá a página abre vazia (quem abre não vê os seus treinos) e não oferece
-recarregar `data/treinos.xlsx`. Cada endereço guarda as edições à parte, no
+Lá quem abre pela primeira vez não vê os seus treinos: começa com um exemplo
+(3 corridas — leve, tiros e longa — e um ABC de musculação, a partir do dia em
+que abriu), e o menu não oferece recarregar `data/treinos.xlsx`. Cada endereço guarda as edições à parte, no
 navegador: para levar os treinos do `localhost` para o Pages, use **Baixar
 planilha** num e **Importar → Substituir tudo** no outro.
 
@@ -50,6 +51,25 @@ planilha** num e **Importar → Substituir tudo** no outro.
   ela para guardar no projeto (e editar em massa no Excel, se quiser).
 - Menu **⋯**: recarregar `data/treinos.xlsx`, descartar edições, começar do zero
   e o Pix de apoio.
+
+### Assistente (IA no seu computador)
+
+**Assistente**, no topo, abre um chat: escreva o que quer ("monte 4 semanas de
+corrida para 5 km", "passa o treino de pernas para segunda que vem", "troca o
+supino por flexão") e ele propõe as mudanças. Nada muda até você clicar em
+**Aplicar**, e dá para **Desfazer** em seguida.
+
+- Usa o [Ollama](https://ollama.com), gratuito e no seu computador: os treinos
+  não saem da sua máquina. Instale e baixe um modelo: `ollama pull qwen3:8b`.
+- Pelo `localhost` funciona direto. Pelo GitHub Pages, libere o endereço no
+  Ollama: variável de ambiente `OLLAMA_ORIGINS=https://filipejefte.github.io`
+  e reinicie o Ollama (o navegador pode pedir para o site acessar o seu
+  computador: permita).
+- Numa RTX 4050 de notebook, o `qwen3:8b` responde em 20 s a 1 min. Modelos
+  pequenos erram às vezes: confira a lista de mudanças antes de aplicar.
+- As datas: o modelo diz "semana que vem, segunda" e o Body+ faz a conta (ele
+  erra quando tenta calcular a data sozinho).
+- Endereço e modelo ficam em *configurar*, no rodapé do painel.
 
 O traço embaixo de cada cartão é o **perfil do treino**: largura = tempo,
 altura e cor = zona de FC (cinza sem alvo, azul Z2, verde Z3, laranja Z4,
@@ -162,6 +182,7 @@ Z1 50–59% · Z2 60–69% · Z3 70–79% · Z4 80–89% · Z5 90–95%.
 ```
 index.html            página
 web/app.js            interface: semanas, editor, novo treino, importar, envio, Pix
+web/assistente.js     chat com o Ollama: propõe mudanças, você aplica ou desfaz
 web/builder.js        linhas da planilha → JSON do Garmin (nomes, passos, datas do plano)
 web/pdf-plano.js      leitura do PDF do Time Híbrido (pdf.js, no navegador)
 web/depara.js         De-para padrão exercício → catálogo do Garmin
@@ -185,6 +206,14 @@ data/garmin_exercises.json  catálogo de exercícios do Garmin
   musculação 5, cardio 6, yoga 7, pilates 8, HIIT 9, mobilidade 11,
   caminhada 17, trilha 18. Corrida e musculação foram validadas no Garmin; as
   outras seguem o mesmo formato — confira com *Só simular* e depois no relógio.
+- De-para revisto em 25/11/2026 contra o catálogo do Garmin: a cadeira
+  extensora passou para a máquina (estava a versão com elástico), o pulldown
+  para o de braços estendidos (a puxada alta é o Lat Pulldown) e a remada alta
+  para a versão genérica. O Body+ troca esses três pares sozinho no que já
+  estava guardado. Treinos já enviados com eles: envie de novo com
+  **Substituir pelo daqui** para atualizar no Garmin. Os pares sem equivalente
+  exato no Garmin (peck deck, cadeira abdutora, rosca Arnold, afundo no Smith)
+  dizem isso na observação.
 - O repositório é público, então `data/treinos.xlsx` também é (qualquer um
   pode baixar o arquivo). O Pages só não o abre sozinho.
 - O envio usa a sessão de quem está logado no navegador: outras pessoas podem

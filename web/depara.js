@@ -29,7 +29,7 @@
       "garmin_exercise": "BARBELL_LUNGE",
       "garmin_label": "Barbell Lunge",
       "confianca": "média",
-      "obs": null
+      "obs": "O Garmin não tem afundo no Smith; o afundo com barra é o mais próximo."
     },
     {
       "exercicio_pt": "AGACHAMENTO C/ PESO DO CORPO",
@@ -60,15 +60,15 @@
       "garmin_category": "CURL",
       "garmin_exercise": "CABLE_HAMMER_CURL",
       "garmin_label": "Cable Hammer Curl",
-      "confianca": "média",
-      "obs": null
+      "confianca": "alta",
+      "obs": "Rosca na polia com corda = martelo no cabo."
     },
     {
       "exercicio_pt": "BULGARO",
       "garmin_category": "LUNGE",
       "garmin_exercise": "DUMBBELL_BULGARIAN_SPLIT_SQUAT",
       "garmin_label": "Dumbbell Bulgarian Split Squat",
-      "confianca": "média",
+      "confianca": "alta",
       "obs": "PDF 3KM Nível 1"
     },
     {
@@ -100,8 +100,8 @@
       "garmin_category": "CURL",
       "garmin_exercise": "CABLE_HAMMER_CURL",
       "garmin_label": "Cable Hammer Curl",
-      "confianca": "média",
-      "obs": null
+      "confianca": "alta",
+      "obs": "Rosca na polia com corda = martelo no cabo."
     },
     {
       "exercicio_pt": "BÍCEPS CONCENTRADO",
@@ -116,8 +116,8 @@
       "garmin_category": "CURL",
       "garmin_exercise": "CABLE_HAMMER_CURL",
       "garmin_label": "Cable Hammer Curl",
-      "confianca": "média",
-      "obs": "PDF 3KM Nível 1"
+      "confianca": "alta",
+      "obs": "Rosca na polia com corda = martelo no cabo."
     },
     {
       "exercicio_pt": "BÍCEPS MARTELO C/ HALTERES",
@@ -132,7 +132,7 @@
       "garmin_category": "CURL",
       "garmin_exercise": "REVERSE_EZ_BAR_CURL",
       "garmin_label": "Reverse Ez Bar Curl",
-      "confianca": "média",
+      "confianca": "alta",
       "obs": null
     },
     {
@@ -141,7 +141,7 @@
       "garmin_exercise": "TWISTING_STANDING_DUMBBELL_BICEPS_CURL",
       "garmin_label": "Twisting Standing Dumbbell Biceps Curl",
       "confianca": "baixa",
-      "obs": null
+      "obs": "O Garmin não tem rosca Arnold; a rosca em pé com giro é a mais próxima."
     },
     {
       "exercicio_pt": "BÍCEPS ROSCA INVERSA",
@@ -164,8 +164,8 @@
       "garmin_category": "HIP_STABILITY",
       "garmin_exercise": "STANDING_HIP_ABDUCTION",
       "garmin_label": "Standing Hip Abduction",
-      "confianca": "baixa",
-      "obs": null
+      "confianca": "média",
+      "obs": "O Garmin não tem a cadeira abdutora; a abdução de quadril em pé é a mais próxima."
     },
     {
       "exercicio_pt": "CADEIRA CHINESA",
@@ -173,7 +173,7 @@
       "garmin_exercise": "LEG_CURL",
       "garmin_label": "Leg Curl",
       "confianca": "baixa",
-      "obs": "PDF 3KM Nível 1"
+      "obs": "Nome regional: confira o movimento e troque se não for flexora."
     },
     {
       "exercicio_pt": "CADEIRA CHINESA ATÉ A FALHA",
@@ -181,15 +181,15 @@
       "garmin_exercise": "LEG_CURL",
       "garmin_label": "Leg Curl",
       "confianca": "baixa",
-      "obs": null
+      "obs": "Nome regional: confira o movimento e troque se não for flexora."
     },
     {
       "exercicio_pt": "CADEIRA EXTENSORA",
-      "garmin_category": "BANDED_EXERCISES",
-      "garmin_exercise": "LEG_EXTENSION",
-      "garmin_label": "Leg Extension",
-      "confianca": "baixa",
-      "obs": null
+      "garmin_category": "CRUNCH",
+      "garmin_exercise": "LEG_EXTENSIONS",
+      "garmin_label": "Leg Extensions",
+      "confianca": "média",
+      "obs": "No catálogo do Garmin a cadeira extensora (máquina) fica em Crunch. Antes estava a versão com elástico."
     },
     {
       "exercicio_pt": "CADEIRA FLEXORA",
@@ -396,32 +396,32 @@
       "garmin_category": "FLYE",
       "garmin_exercise": "CABLE_CROSSOVER",
       "garmin_label": "Cable Crossover",
-      "confianca": "baixa",
-      "obs": "PDF 3KM Nível 1"
+      "confianca": "média",
+      "obs": "O Garmin não tem peck deck; o crucifixo na polia é o movimento mais próximo."
     },
     {
       "exercicio_pt": "PECKDECK",
       "garmin_category": "FLYE",
       "garmin_exercise": "CABLE_CROSSOVER",
       "garmin_label": "Cable Crossover",
-      "confianca": "baixa",
-      "obs": null
+      "confianca": "média",
+      "obs": "O Garmin não tem peck deck; o crucifixo na polia é o movimento mais próximo."
     },
     {
       "exercicio_pt": "POSTERIOR DE OMBROS NA POLIA",
       "garmin_category": "FLYE",
       "garmin_exercise": "SINGLE_ARM_STANDING_CABLE_REVERSE_FLYE",
       "garmin_label": "Single Arm Standing Cable Reverse Flye",
-      "confianca": "média",
+      "confianca": "alta",
       "obs": null
     },
     {
       "exercicio_pt": "PULLDOWN",
       "garmin_category": "PULL_UP",
-      "garmin_exercise": "LAT_PULLDOWN",
-      "garmin_label": "Lat Pulldown",
-      "confianca": "alta",
-      "obs": null
+      "garmin_exercise": "STRAIGHT_ARM_PULLDOWN",
+      "garmin_label": "Straight-Arm Pulldown",
+      "confianca": "média",
+      "obs": "Na academia, pulldown é em pé com os braços estendidos; a puxada alta é o Lat Pulldown."
     },
     {
       "exercicio_pt": "PUXADA ALTA",
@@ -434,10 +434,10 @@
     {
       "exercicio_pt": "REMADA ALTA",
       "garmin_category": "SHRUG",
-      "garmin_exercise": "DUMBBELL_UPRIGHT_ROW",
-      "garmin_label": "Dumbbell Upright Row",
+      "garmin_exercise": "UPRIGHT_ROW",
+      "garmin_label": "Upright Row",
       "confianca": "alta",
-      "obs": null
+      "obs": "Sem equipamento no nome: a versão genérica."
     },
     {
       "exercicio_pt": "REMADA BAIXA",
@@ -493,7 +493,7 @@
       "garmin_exercise": "TWISTING_STANDING_DUMBBELL_BICEPS_CURL",
       "garmin_label": "Twisting Standing Dumbbell Biceps Curl",
       "confianca": "baixa",
-      "obs": null
+      "obs": "O Garmin não tem rosca Arnold; a rosca em pé com giro é a mais próxima."
     },
     {
       "exercicio_pt": "ROSCA BÍCEPS",
@@ -540,7 +540,7 @@
       "garmin_category": "BENCH_PRESS",
       "garmin_exercise": "INCLINE_BARBELL_BENCH_PRESS",
       "garmin_label": "Incline Barbell Bench Press",
-      "confianca": "média",
+      "confianca": "alta",
       "obs": "PDF 3KM Nível 1"
     },
     {
@@ -580,24 +580,24 @@
       "garmin_category": "TRICEPS_EXTENSION",
       "garmin_exercise": "TRICEPS_PRESSDOWN",
       "garmin_label": "Triceps Pressdown",
-      "confianca": "média",
-      "obs": null
+      "confianca": "alta",
+      "obs": "Tríceps na polia com barra."
     },
     {
       "exercicio_pt": "TRÍCEPS C/ BARRA",
       "garmin_category": "TRICEPS_EXTENSION",
       "garmin_exercise": "TRICEPS_PRESSDOWN",
       "garmin_label": "Triceps Pressdown",
-      "confianca": "média",
-      "obs": null
+      "confianca": "alta",
+      "obs": "Tríceps na polia com barra."
     },
     {
       "exercicio_pt": "TRÍCEPS C/ BARRA RETA",
       "garmin_category": "TRICEPS_EXTENSION",
       "garmin_exercise": "TRICEPS_PRESSDOWN",
       "garmin_label": "Triceps Pressdown",
-      "confianca": "média",
-      "obs": "PDF 3KM Nível 1"
+      "confianca": "alta",
+      "obs": "Tríceps na polia com barra."
     },
     {
       "exercicio_pt": "TRÍCEPS C/ CORDA",
@@ -653,14 +653,14 @@
       "garmin_exercise": "BENCH_DIP",
       "garmin_label": "Bench Dip",
       "confianca": "média",
-      "obs": null
+      "obs": "Se for nas paralelas, troque para Body Weight Dip."
     },
     {
       "exercicio_pt": "TRÍCEPS TESTA",
       "garmin_category": "TRICEPS_EXTENSION",
       "garmin_exercise": "LYING_EZ_BAR_TRICEPS_EXTENSION",
       "garmin_label": "Lying Ez Bar Triceps Extension",
-      "confianca": "média",
+      "confianca": "alta",
       "obs": "PDF 3KM Nível 1"
     },
     {
@@ -676,24 +676,24 @@
       "garmin_category": "FLYE",
       "garmin_exercise": "CABLE_CROSSOVER",
       "garmin_label": "Cable Crossover",
-      "confianca": "baixa",
-      "obs": "PDF 3KM Nível 1"
+      "confianca": "alta",
+      "obs": "Voador na polia alta = crossover."
     },
     {
       "exercicio_pt": "VOADOR POLIA ALTA",
       "garmin_category": "FLYE",
       "garmin_exercise": "CABLE_CROSSOVER",
       "garmin_label": "Cable Crossover",
-      "confianca": "baixa",
-      "obs": "PDF 3KM Nível 1"
+      "confianca": "alta",
+      "obs": "Voador na polia alta = crossover."
     },
     {
       "exercicio_pt": "VOADOR POLIDA ALTA",
       "garmin_category": "FLYE",
       "garmin_exercise": "CABLE_CROSSOVER",
       "garmin_label": "Cable Crossover",
-      "confianca": "baixa",
-      "obs": null
+      "confianca": "alta",
+      "obs": "Voador na polia alta = crossover."
     }
   ];
   if (typeof module !== 'undefined' && module.exports) module.exports = DEPARA_PADRAO;
