@@ -169,19 +169,19 @@
     },
     {
       "exercicio_pt": "CADEIRA CHINESA",
-      "garmin_category": "LEG_CURL",
-      "garmin_exercise": "LEG_CURL",
-      "garmin_label": "Leg Curl",
-      "confianca": "baixa",
-      "obs": "Nome regional: confira o movimento e troque se não for flexora."
+      "garmin_category": "SQUAT",
+      "garmin_exercise": "BODY_WEIGHT_WALL_SQUAT",
+      "garmin_label": "Body Weight Wall Squat",
+      "confianca": "alta",
+      "obs": "Cadeira chinesa = agachamento isométrico encostado na parede."
     },
     {
       "exercicio_pt": "CADEIRA CHINESA ATÉ A FALHA",
-      "garmin_category": "LEG_CURL",
-      "garmin_exercise": "LEG_CURL",
-      "garmin_label": "Leg Curl",
-      "confianca": "baixa",
-      "obs": "Nome regional: confira o movimento e troque se não for flexora."
+      "garmin_category": "SQUAT",
+      "garmin_exercise": "BODY_WEIGHT_WALL_SQUAT",
+      "garmin_label": "Body Weight Wall Squat",
+      "confianca": "alta",
+      "obs": "Cadeira chinesa = agachamento isométrico encostado na parede."
     },
     {
       "exercicio_pt": "CADEIRA EXTENSORA",

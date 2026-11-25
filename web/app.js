@@ -157,6 +157,8 @@
     'CADEIRA EXTENSORA': 'BANDED_EXERCISES/LEG_EXTENSION',
     'PULLDOWN': 'PULL_UP/LAT_PULLDOWN',
     'REMADA ALTA': 'SHRUG/DUMBBELL_UPRIGHT_ROW',
+    'CADEIRA CHINESA': 'LEG_CURL/LEG_CURL',              // é o agachamento isométrico na parede
+    'CADEIRA CHINESA ATÉ A FALHA': 'LEG_CURL/LEG_CURL',
   };
   function corrigirDepara(rows) {
     const padrao = new Map((window.TH_DEPARA_PADRAO || []).map((d) => [d.exercicio_pt.toUpperCase(), d]));

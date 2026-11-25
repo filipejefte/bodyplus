@@ -208,8 +208,9 @@ data/garmin_exercises.json  catálogo de exercícios do Garmin
   outras seguem o mesmo formato — confira com *Só simular* e depois no relógio.
 - De-para revisto em 25/11/2026 contra o catálogo do Garmin: a cadeira
   extensora passou para a máquina (estava a versão com elástico), o pulldown
-  para o de braços estendidos (a puxada alta é o Lat Pulldown) e a remada alta
-  para a versão genérica. O Body+ troca esses três pares sozinho no que já
+  para o de braços estendidos (a puxada alta é o Lat Pulldown), a remada alta
+  para a versão genérica e a cadeira chinesa (agachamento isométrico na parede)
+  para o Wall Squat — estava como flexora. O Body+ troca esses pares sozinho no que já
   estava guardado. Treinos já enviados com eles: envie de novo com
   **Substituir pelo daqui** para atualizar no Garmin. Os pares sem equivalente
   exato no Garmin (peck deck, cadeira abdutora, rosca Arnold, afundo no Smith)
