@@ -13,7 +13,10 @@
  */
 const MAX_CORPO = 150000;   // caracteres do pedido (o contexto de treinos cabe com folga)
 const MAX_MENSAGENS = 30;
-const ESPERA_MS = 30000;    // por modelo: sobrecarregado, o Gemini às vezes não responde em vez de dar erro
+// sobrecarregado, o Gemini às vezes trava em vez de dar erro: os primeiros modelos têm prazo curto
+// (respondem em 1–6 s quando estão bem), o último fica com o que sobrar, e o pedido todo não passa de ESPERA_MS
+const ESPERA_MS = 30000;
+const ESPERA_CURTA_MS = 12000;
 
 /**
  * Regra de assunto, fixa aqui e posta antes das instruções da página: vale mesmo
@@ -22,6 +25,7 @@ const ESPERA_MS = 30000;    // por modelo: sobrecarregado, o Gemini às vezes n�
 export const REGRA_FIXA = [
   'Assunto: você só ajuda com treinos e com o Body+. Vale: criar, mudar e organizar treinos; corrida, musculação e outras modalidades;',
   'zonas de frequência cardíaca, aquecimento, descanso e recuperação; alimentação e hidratação em volta do treino; como usar o Body+ e enviar ao Garmin.',
+  'Montar, criar, mudar ou organizar treinos é o seu trabalho principal: faça por completo, por maior que seja o pedido. Na dúvida, trate o pedido como assunto de treino.',
   'Para qualquer outro assunto: no máximo meia frase sobre ele, sem detalhes, e volte para os treinos oferecendo algo concreto. Deixe "acoes" vazia.',
   'Exemplos de outro assunto:',
   '- "o que é Marimar?" → "Marimar foi uma novela mexicana dos anos 90 — mas aqui eu cuido dos seus treinos! Quer que eu monte a sua semana?"',
@@ -60,21 +64,26 @@ export default {
     // ou está sobrecarregado (500/503: "high demand", comum no plano gratuito)
     const modelos = String(env.MODELOS || 'gemini-flash-latest').split(',').map((s) => s.trim()).filter(Boolean);
     let ultimo = null;
-    for (const modelo of modelos) {
+    const falhas = [];   // "modelo status" de quem não respondeu: vai junto na resposta, para entender demoras
+    const prazo = Date.now() + ESPERA_MS;
+    for (const [i, modelo] of modelos.entries()) {
       const corpo = paraGemini(mensagens, pedido.schema);
-      let r = await chamar(env, modelo, corpo);
+      const resta = prazo - Date.now();
+      if (resta < 2000) { ultimo = 504; break; }
+      const espera = i < modelos.length - 1 ? Math.min(ESPERA_CURTA_MS, resta) : resta;
+      let r = await chamar(env, modelo, corpo, espera);
       if (r.status === 400 && corpo.generationConfig.responseJsonSchema) {
         // esquema recusado: pede só "responda em JSON" (a página confere cada mudança mesmo assim)
         delete corpo.generationConfig.responseJsonSchema;
-        r = await chamar(env, modelo, corpo);
+        r = await chamar(env, modelo, corpo, espera);
       }
-      if ([404, 429, 500, 503, 504].includes(r.status)) { ultimo = r.status; continue; }
+      if ([404, 429, 500, 503, 504].includes(r.status)) { ultimo = r.status; falhas.push(`${modelo} ${r.status}`); continue; }
       const j = await r.json().catch(() => ({}));
       if (!r.ok) return responder(502, { erro: `o Gemini respondeu ${r.status}` + (j.error && j.error.message ? `: ${String(j.error.message).slice(0, 160)}` : '') });
       const c = (j.candidates || [])[0] || {};
       const texto = ((c.content && c.content.parts) || []).map((p) => p.text || '').join('');
       if (!texto) return responder(502, { erro: 'o Gemini não devolveu resposta' + (c.finishReason ? ` (${c.finishReason})` : '') });
-      return responder(200, { texto, modelo });
+      return responder(200, { texto, modelo, falhas });
     }
     if (ultimo === 429) return responder(429, { erro: 'o limite gratuito do Gemini acabou por hoje — tente amanhã' });
     if ([500, 503, 504].includes(ultimo)) return responder(503, { erro: 'o Gemini está sobrecarregado agora — tente de novo em instantes' });

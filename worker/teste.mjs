@@ -54,6 +54,7 @@ chamadas = []; respostas = [[429, {}], ok('{}')];
 r = await rodar(pedido({ messages: MSGS }));
 assert.strictEqual(r.status, 200);
 assert.strictEqual(r.j.modelo, 'modelo-b');
+assert.deepStrictEqual(r.j.falhas, ['modelo-a 429']);
 respostas = [[429, {}], [429, {}]];
 r = await rodar(pedido({ messages: MSGS }));
 assert.strictEqual(r.status, 429);
