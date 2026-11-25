@@ -54,8 +54,8 @@ planilha** num e **Importar → Substituir tudo** no outro.
 - Menu **⋯**: **Baixar planilha** (salva tudo em `.xlsx`; substitua
   `data/treinos.xlsx` por ela para guardar no projeto e editar em massa no
   Excel), recarregar `data/treinos.xlsx`, descartar edições e começar do zero.
-- **Apoiar**, no topo e no fim da página: o Pix de apoio, de qualquer valor.
-- **Assistente**: o botão redondo no canto de baixo.
+- **Apoiar**, no topo da página: o Pix de apoio, de qualquer valor.
+- **Assistente**: o botão redondo no canto inferior direito.
 - No painel de envio, calendário, "se já existe" e "só simular" ficam em
   **Opções**; limpar o calendário ou "Meus treinos" inteiros fica em **Limpar o
   Garmin inteiro**.
