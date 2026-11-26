@@ -209,7 +209,7 @@
     </figure>
     <div class="pix-linha">
       <div>
-        <span class="pix-rotulo">Chave Pix (celular)</span>
+        <span class="pix-rotulo">Chave Pix (aleatória)</span>
         <b class="pix-valor" id="pix-chave"></b>
       </div>
       <button class="btn btn-claro" id="btn-copiar-chave">Copiar chave</button>
@@ -230,7 +230,8 @@
   <datalist id="dl-catalogo"></datalist>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- integrity: o navegador recusa o arquivo se o CDN servir outra coisa (trocar a versão = trocar o hash) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous"></script>
   <script src="web/builder.js"></script>
   <script src="web/depara.js"></script>
   <script src="web/pdf-plano.js"></script>

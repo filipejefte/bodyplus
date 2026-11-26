@@ -31,11 +31,12 @@
   // Doação via Pix — o valor é livre (o QR não tem valor fixo).
   // ---------------------------------------------------------------------
   // QR estático sem valor (campo 54 ausente) — conferido: chave, recebedor e CRC.
+  // Chave aleatória de propósito: o site é público e não deve mostrar telefone, e-mail nem CPF.
   const PIX = {
-    chave: '+5514996272582',        // vai para a área de transferência (celular com +55)
-    exibir: '(14) 99627-2582',
+    chave: '3c76c3dc-391d-438f-b963-3238adeb2461',   // vai para a área de transferência
+    exibir: '3c76c3dc-391d-438f-b963-3238adeb2461',
     qr: 'assets/pix-qr.png',        // gerado a partir do código abaixo
-    copiaECola: '00020126360014BR.GOV.BCB.PIX0114+55149962725825204000053039865802BR5923FILIPE JEFTE DE CAMARGO6007MARILIA62070503***6304468D',
+    copiaECola: '00020126580014BR.GOV.BCB.PIX01363c76c3dc-391d-438f-b963-3238adeb24615204000053039865802BR5923FILIPE JEFTE DE CAMARGO6007MARILIA62070503***630490DD',
     recebedor: 'Filipe Jefte de Camargo',
   };
 

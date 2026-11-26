@@ -19,6 +19,10 @@
   'use strict';
 
   const PDFJS = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js';
+  // o navegador recusa o pdf.js se o CDN servir outra coisa (trocar a versão = trocar o hash)
+  const PDFJS_SRI = 'sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e';
+  // ponytail: o worker não aceita SRI (o pdf.js o carrega sozinho); roda isolado, sem acesso à página nem ao
+  // localStorage, e só vê o PDF importado. Se precisar, baixar, conferir o hash e passar como blob: URL.
   const PDFJS_WORKER = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
 
   function carregarPdfJs() {
@@ -26,6 +30,8 @@
     return new Promise((ok, erro) => {
       const s = document.createElement('script');
       s.src = PDFJS;
+      s.integrity = PDFJS_SRI;
+      s.crossOrigin = 'anonymous';
       s.onload = () => {
         if (!raiz.pdfjsLib) { erro(new Error('pdf.js não carregou')); return; }
         raiz.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
