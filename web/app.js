@@ -244,6 +244,7 @@
   function salvar() {
     try { localStorage.setItem(CHAVE_LS, JSON.stringify(S)); }
     catch (e) { toast('Não consegui guardar as edições neste navegador — baixe a planilha para não perder.'); }
+    document.dispatchEvent(new Event('bodyplus:salvo'));   // a nuvem (web/nuvem.js) leva a cópia
   }
 
   function carregarSalvo() {
@@ -1366,9 +1367,19 @@
     catch (e) { iniciar(estadoExemplo()); }
   }
 
-  // Ponte para o assistente (web/assistente.js): ler os treinos e aplicar mudanças com desfazer.
+  // Ponte para o assistente (web/assistente.js) e a nuvem (web/nuvem.js).
   window.BodyApp = {
-    hoje, novoId, fmtData, NOVO, NOVO_PADRAO, linhaAquecimento,
+    hoje, novoId, fmtData, NOVO, NOVO_PADRAO, linhaAquecimento, toast, copiarTexto,
+    WORKER: 'https://bodyplus-ia.bodyplus.workers.dev',   // worker/: assistente e nuvem
+    /** Tudo o que fica salvo neste navegador (o que vai para a nuvem). */
+    estado: () => S,
+    temTreinos: () => (D.treinos || []).length > 0,
+    /** Troca tudo por um estado vindo de fora (a nuvem). */
+    substituir(estado) {
+      if (!estado || !estado.base || !estado.atual) throw new Error('plano da nuvem em formato desconhecido');
+      corrigirDepara(estado.base.depara); corrigirDepara(estado.atual.depara);
+      iniciar(estado);
+    },
     treinos: () => (D.treinos || []),
     linhas: () => S.atual,
     exercicios: () => [...new Set((S.atual.depara || []).map((d) => String(d.exercicio_pt || '').trim()).filter(Boolean))],

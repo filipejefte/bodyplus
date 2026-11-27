@@ -58,3 +58,25 @@ const U = require('../extensao/uploader.js');
 const DEPARA = require('./depara.js');
 const noCatalogo = new Set(require('../data/garmin_exercises.json').map((e) => e.category + '|' + e.key));
 assert.deepStrictEqual(DEPARA.filter((d) => !noCatalogo.has(d.garmin_category + '|' + d.garmin_exercise)).map((d) => d.exercicio_pt), []);
+
+// Nuvem: código → id + chave, e o plano só sai daqui cifrado (o Worker nunca vê o conteúdo)
+const N = require('./nuvem.js');
+(async () => {
+  const cod = N.novoCodigo();
+  assert.strictEqual(cod.length, 24);
+  assert(N.valido(cod) && N.valido(N.formatar(cod).toLowerCase()), 'aceita com traços e minúsculas');
+  assert.strictEqual(N.normalizar('o1 il-0'), '01110', 'O vira 0; I e L viram 1');
+  assert(!N.valido(cod.slice(1)), 'curto demais');
+  const a = await N.derivar(cod), b = await N.derivar(N.formatar(cod).toLowerCase());
+  assert.strictEqual(a.id, b.id);
+  assert.match(a.id, /^[0-9a-f]{64}$/);
+  assert.notStrictEqual((await N.derivar(N.novoCodigo())).id, a.id);
+  const plano = JSON.stringify({ base: { cardio: [] }, atual: { cardio: [{ nome: 'Corrida leve' }] }, notas: 'á'.repeat(5000) });
+  const cifrado = await N.cifrar(a.chave, plano);
+  assert.match(cifrado, /^[A-Za-z0-9+/=]+$/);
+  assert(!Buffer.from(cifrado, 'base64').toString('latin1').includes('Corrida'), 'nada em claro');
+  assert(cifrado.length < plano.length / 4, 'vai comprimido');
+  assert.strictEqual(await N.decifrar(b.chave, cifrado), plano);
+  await assert.rejects(N.decifrar((await N.derivar(N.novoCodigo())).chave, cifrado), 'outro código não abre');
+  assert.notStrictEqual(await N.cifrar(a.chave, plano), cifrado, 'cada gravação com iv novo');
+})().catch((e) => { console.error(e); process.exit(1); });

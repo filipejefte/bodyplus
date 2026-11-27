@@ -54,6 +54,8 @@ planilha** num e **Importar → Substituir tudo** no outro.
 - Menu **⋯**: **Baixar planilha** (salva tudo em `.xlsx`; substitua
   `data/treinos.xlsx` por ela para guardar no projeto e editar em massa no
   Excel), recarregar `data/treinos.xlsx`, descartar edições e começar do zero.
+- Menu **⋯ → Salvar na nuvem**: o mesmo plano no PC e no celular, salvo
+  sozinho (veja **Nuvem**, abaixo).
 - **Apoiar**, no topo da página: o Pix de apoio, de qualquer valor.
 - **Assistente**: o botão redondo no canto inferior direito.
 - No painel de envio, calendário, "se já existe" e "só simular" ficam em
@@ -99,12 +101,47 @@ supino por flexão") e ele propõe as mudanças. Nada muda até você clicar em
    um nome para o seu subdomínio `workers.dev` e mostra o endereço do Worker
    (`https://bodyplus-ia.<subdomínio>.workers.dev`). O `secret put` pede a
    chave: cole e aperte Enter (ela fica só no Cloudflare).
-4. Coloque esse endereço em `CONF.url`, no começo de `web/assistente.js`, e
-   envie ao GitHub.
+4. Coloque esse endereço em `WORKER`, no fim de `web/app.js` (assistente e
+   nuvem usam o mesmo), e envie ao GitHub.
 
 Se o `deploy` recusar o bloco `[[ratelimits]]` do `wrangler.toml`, apague esse
 bloco e rode de novo: o Worker funciona sem ele (só sem o limite por pessoa).
 Conferência do Worker: `node worker/teste.mjs`.
+
+### Nuvem (PC e celular)
+
+Sem a nuvem, o plano fica só no navegador onde você abriu o Body+: limpar os
+dados do navegador apaga, e o celular tem outro plano. Com ela:
+
+1. Menu **⋯ → Salvar na nuvem → Ativar neste aparelho**. A partir daí cada
+   mudança é salva sozinha (o topo mostra **Salvo na nuvem**).
+2. No outro aparelho, abra o **link** da mesma janela (mande para você mesmo
+   pelo WhatsApp ou e-mail) — ou cole o **código** em "Já ativou em outro
+   aparelho?". Os dois passam a usar o mesmo plano.
+
+- **Privado de verdade**: o plano sai do aparelho comprimido e **cifrado**
+  (AES-GCM) com uma chave tirada do seu código. O Worker e o Cloudflare só
+  guardam um bloco ilegível, sob um hash do código. Nem quem mantém o Body+ lê.
+- **Guarde o código**: sem ele não há como recuperar o plano. E quem tiver o
+  link ou o código abre e muda os seus treinos — mande só para você.
+- **Sem internet** o topo avisa "salvo só aqui" e as mudanças sobem sozinhas
+  quando a conexão volta.
+- **Dois aparelhos mudaram ao mesmo tempo**: o Body+ pergunta qual versão
+  manter. Nada é sobrescrito calado.
+- **Desligar neste aparelho** para de sincronizar só ali; **Apagar da nuvem**
+  tira o plano do Worker (os aparelhos continuam com a cópia deles).
+
+**Publicar a nuvem** (uma vez, depois do Worker do assistente):
+
+```powershell
+cd worker
+npx wrangler kv namespace create PLANOS
+```
+
+Copie o `id` que ele mostra para `[[kv_namespaces]]` no `worker/wrangler.toml`
+e rode `npx wrangler deploy`. O plano gratuito do Cloudflare (1 GB e mil
+gravações por dia) sobra para algumas pessoas: a página junta as edições e
+salva no máximo a cada poucos segundos.
 
 O traço embaixo de cada cartão é o **perfil do treino**: largura = tempo,
 altura e cor = zona de FC (cinza sem alvo, azul Z2, verde Z3, laranja Z4,
@@ -218,7 +255,9 @@ Z1 50–59% · Z2 60–69% · Z3 70–79% · Z4 80–89% · Z5 90–95%.
 index.html            página
 web/app.js            interface: semanas, editor, novo treino, importar, envio, Pix
 web/assistente.js     chat do assistente: propõe mudanças, você aplica ou desfaz
-worker/               Cloudflare Worker que guarda a chave do Gemini (node worker/teste.mjs)
+web/nuvem.js          nuvem: código → id + chave, plano cifrado no Worker, conflitos
+worker/index.js       Cloudflare Worker: chave do Gemini e planos cifrados (KV) — node worker/teste.mjs
+worker/gemini.js      regra de assunto e conversão do chat para o Gemini
 web/builder.js        linhas da planilha → JSON do Garmin (nomes, passos, datas do plano)
 web/pdf-plano.js      leitura do PDF do Time Híbrido (pdf.js, no navegador)
 web/depara.js         De-para padrão exercício → catálogo do Garmin

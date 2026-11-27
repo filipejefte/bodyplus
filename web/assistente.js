@@ -17,7 +17,7 @@
   const esc = (v) => String(v === null || v === undefined ? '' : v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
   /** Endereço do Worker (worker/), publicado com `npx wrangler deploy`: veja "Assistente" no README. */
-  const CONF = { url: 'https://bodyplus-ia.bodyplus.workers.dev' };
+  const CONF = { url: A.WORKER };
   const conversa = [];          // [{role: 'user'|'assistant', content}] mandado de volta como histórico
   let pedido = null;            // AbortController do pedido em andamento
   const ESPORTES = Object.keys(B.ESPORTES);

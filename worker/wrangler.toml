@@ -22,3 +22,18 @@ namespace_id = "1001"
   [ratelimits.simple]
   limit = 6
   period = 60
+
+# Nuvem: planos cifrados (veja "Nuvem" no README). Criar uma vez e colar o id:
+#   npx wrangler kv namespace create PLANOS
+[[kv_namespaces]]
+binding = "PLANOS"
+id = "c1a741871d404550824705e9c44410bc"
+
+# gravações na nuvem por pessoa (por IP): a página salva no máximo a cada poucos segundos
+[[ratelimits]]
+name = "LIMITE_PLANO"
+namespace_id = "1002"
+
+  [ratelimits.simple]
+  limit = 30
+  period = 60

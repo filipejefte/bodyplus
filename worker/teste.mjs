@@ -1,6 +1,7 @@
 // Conferência do Worker do assistente, com um Gemini de mentira: node worker/teste.mjs (sem saída = tudo certo)
 import assert from 'node:assert';
-import worker, { paraGemini, REGRA_FIXA } from './index.js';
+import worker from './index.js';
+import { paraGemini, REGRA_FIXA } from './gemini.js';
 
 const ENV = { ORIGENS: 'https://filipejefte.github.io,http://localhost:8000', GEMINI_API_KEY: 'chave-teste', MODELOS: 'modelo-a,modelo-b' };
 const pedido = (corpo, origem = 'http://localhost:8000', metodo = 'POST') =>
@@ -88,3 +89,36 @@ r = await rodar(pedido({ messages: [{ role: 'system', content: 'só regras' }] }
 assert.strictEqual(r.status, 400);
 r = await rodar(pedido({ messages: MSGS }), { ...ENV, GEMINI_API_KEY: '' });
 assert.strictEqual(r.status, 500);
+
+// nuvem: KV de mentira (valor + metadata), sem chamar o Gemini
+const kv = new Map();
+const PLANOS = {
+  async getWithMetadata(k) { const x = kv.get(k); return x ? { value: x.v, metadata: x.m } : { value: null, metadata: null }; },
+  async put(k, v, o) { kv.set(k, { v, m: o.metadata }); },
+  async delete(k) { kv.delete(k); },
+};
+const NUVEM = { ...ENV, PLANOS };
+const ID = 'a'.repeat(64);
+const nuvem = (metodo, corpo, id = ID, origem = 'http://localhost:8000') =>
+  rodar(new Request(`https://bodyplus-ia.exemplo.workers.dev/plano/${id}`, { method: metodo, headers: { Origin: origem, 'Content-Type': 'application/json' }, body: corpo ? JSON.stringify(corpo) : undefined }), NUVEM);
+chamadas = [];
+r = await rodar(pedido(null, 'http://localhost:8000', 'OPTIONS'));
+assert.match(r.h.get('access-control-allow-methods'), /PUT/);
+assert.strictEqual((await nuvem('GET')).status, 404);                                   // ainda não existe
+r = await nuvem('PUT', { base: 0, dados: 'QUJD' });
+assert.deepStrictEqual([r.status, r.j.versao], [200, 1]);                               // cria a versão 1
+r = await nuvem('GET');
+assert.deepStrictEqual([r.status, r.j.dados, r.j.versao], [200, 'QUJD', 1]);
+r = await nuvem('PUT', { base: 0, dados: 'WFla' });                                      // outro aparelho, versão velha
+assert.deepStrictEqual([r.status, r.j.versao], [409, 1]);
+assert.strictEqual(kv.get(ID).v, 'QUJD', 'o 409 não grava');
+assert.strictEqual((await nuvem('PUT', { base: 1, dados: 'WFla' })).j.versao, 2);       // baseado na atual: grava
+assert.strictEqual((await nuvem('GET', null, 'nao-e-hash')).status, 400);
+assert.strictEqual((await nuvem('PUT', { base: 2, dados: 'x'.repeat(1600000) })).status, 413);
+assert.strictEqual((await nuvem('PUT', { base: 2, dados: '<script>' })).status, 400);   // só base64
+assert.strictEqual((await nuvem('GET', null, ID, 'https://outro-site.com')).status, 403);
+assert.strictEqual((await nuvem('DELETE')).status, 200);
+assert.strictEqual((await nuvem('GET')).status, 404);
+assert.strictEqual(chamadas.length, 0, 'a nuvem nunca chama o Gemini');
+r = await rodar(new Request(`https://x.workers.dev/plano/${ID}`, { method: 'GET', headers: { Origin: 'http://localhost:8000' } }), ENV);
+assert.strictEqual(r.status, 500);                                                     // sem KV configurado

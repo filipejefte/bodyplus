@@ -24,11 +24,13 @@
     <symbol id="i-conversa" viewBox="0 0 24 24"><path d="M5 5.5h14a1.5 1.5 0 0 1 1.5 1.5v8.5A1.5 1.5 0 0 1 19 17H10l-4.5 3.5V17H5a1.5 1.5 0 0 1-1.5-1.5V7A1.5 1.5 0 0 1 5 5.5z"/><path d="M12 8.5l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z"/></symbol>
     <symbol id="i-aviso" viewBox="0 0 24 24"><path d="M12 4 2.8 19.5h18.4z"/><path d="M12 10v4.2M12 17h.01"/></symbol>
     <symbol id="i-seta-baixo" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+    <symbol id="i-nuvem" viewBox="0 0 24 24"><path d="M7 18.5h10.5a4 4 0 0 0 .6-7.95A6 6 0 0 0 6.6 9.1 4.7 4.7 0 0 0 7 18.5z"/></symbol>
   </svg>
 
   <header class="topo">
     <h1 class="marca">Body<svg class="mais" viewBox="0 0 40 40" aria-hidden="true"><path d="M14 0h12v14h14v12H26v14H14V26H0V14h14z"/></svg><span class="sr">+</span></h1>
     <p class="fonte" id="fonte" aria-live="polite"></p>
+    <button class="nuvem-status" id="nuvem-status" hidden aria-haspopup="dialog"><svg class="ic" aria-hidden="true"><use href="#i-nuvem"/></svg><span></span></button>
     <div class="acoes-topo">
       <button class="btn btn-apoio" data-apoiar aria-haspopup="dialog"><svg class="ic ic-cheio" aria-hidden="true"><use href="#i-coracao"/></svg>Apoiar</button>
       <button class="btn btn-claro" data-importar title="PDF do Time Híbrido ou planilha .xlsx">Importar</button>
@@ -36,6 +38,7 @@
       <details class="menu">
         <summary class="btn btn-claro btn-icone" aria-label="Mais opções"><svg class="ic ic-cheio" aria-hidden="true"><use href="#i-mais-opcoes"/></svg></summary>
         <div class="menu-itens">
+          <button id="btn-nuvem">Salvar na nuvem…</button>
           <button id="btn-baixar">Baixar planilha (.xlsx)</button>
           <button id="btn-recarregar">Recarregar data/treinos.xlsx</button>
           <button id="btn-descartar">Descartar todas as edições</button>
@@ -224,6 +227,43 @@
     <p class="nota" id="pix-recebedor" hidden></p>
   </dialog>
 
+  <dialog class="dialogo" id="nuvem" aria-labelledby="nuvem-titulo">
+    <form method="dialog" class="dialogo-fechar"><button class="btn-x" aria-label="Fechar"><svg class="ic" aria-hidden="true"><use href="#i-fechar"/></svg></button></form>
+    <h2 id="nuvem-titulo">Salvar na nuvem</h2>
+    <div id="nuvem-desligada">
+      <p>Seus treinos ficam guardados na nuvem e abrem iguais no celular ou em outro computador. Cada mudança é salva sozinha.</p>
+      <p class="nota">O plano sai deste aparelho já cifrado, com uma chave que só existe no seu código: nem o Body+ consegue ler.</p>
+      <div class="dialogo-rodape nuvem-ativar"><button class="btn btn-primario" id="nuvem-ativar">Ativar neste aparelho</button></div>
+      <form class="nuvem-entrar" id="nuvem-entrar">
+        <label class="campo"><span>Já ativou em outro aparelho? Cole o código</span>
+          <input id="nuvem-codigo" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX"></label>
+        <button class="btn btn-claro">Abrir</button>
+      </form>
+    </div>
+    <div id="nuvem-ligada" hidden>
+      <p id="nuvem-estado"></p>
+      <div class="pix-linha">
+        <div><span class="pix-rotulo">Para abrir em outro aparelho, abra este link lá</span><span class="pix-cc" id="nuvem-link"></span></div>
+        <button class="btn btn-claro" id="nuvem-copiar-link">Copiar link</button>
+      </div>
+      <div class="pix-linha">
+        <div><span class="pix-rotulo">Seu código</span><b class="pix-valor" id="nuvem-cod"></b></div>
+        <button class="btn btn-claro" id="nuvem-copiar-cod">Copiar código</button>
+      </div>
+      <p class="nota">Guarde o código: sem ele não há como recuperar o plano. Quem tiver o link ou o código abre e muda os seus treinos — mande só para você mesmo.</p>
+      <div class="dialogo-rodape"><button class="btn btn-claro btn-perigo" id="nuvem-apagar">Apagar da nuvem</button><button class="btn btn-claro" id="nuvem-desligar">Desligar neste aparelho</button></div>
+    </div>
+  </dialog>
+
+  <dialog class="dialogo" id="nuvem-conflito" aria-labelledby="nuvem-conflito-titulo">
+    <h2 id="nuvem-conflito-titulo">Qual versão manter?</h2>
+    <p>Este aparelho tem mudanças que ainda não foram para a nuvem, e outro aparelho salvou uma versão mais nova nesse meio-tempo.</p>
+    <form method="dialog" class="dialogo-rodape">
+      <button class="btn btn-claro" value="nuvem">Usar a da nuvem</button>
+      <button class="btn btn-primario" value="aqui">Manter a deste aparelho</button>
+    </form>
+  </dialog>
+
   <datalist id="dl-exercicios"></datalist>
   <datalist id="dl-tecnicas"></datalist>
   <datalist id="dl-grupos"></datalist>
@@ -238,5 +278,6 @@
   <script src="extensao/uploader.js"></script>
   <script src="web/app.js"></script>
   <script src="web/assistente.js"></script>
+  <script src="web/nuvem.js"></script>
 </body>
 </html>
